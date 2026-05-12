@@ -1,0 +1,7 @@
+[Unit]
+Description=DDJ-1000 audio rebind
+After=sound.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ddj1000-audio-rebind.sh

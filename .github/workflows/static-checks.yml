@@ -1,0 +1,26 @@
+name: Static Checks
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Python compile check
+        run: python3 -m py_compile scripts/*.py scripts/runtime/*.py
+
+      - name: Shell syntax check
+        run: bash -n scripts/*.sh scripts/runtime/*.sh scripts/dev/*.sh
+
+      - name: Repo smoke check
+        run: python3 scripts/validate-repo.py

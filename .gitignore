@@ -1,0 +1,9 @@
+build/
+out/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.ko
+*.der
+*.key

@@ -1,0 +1,152 @@
+--- sound/usb/quirks-table.h
++++ sound/usb/quirks-table.h
+@@ -3132,6 +3132,66 @@
+ },
+ 
+ {
++/*
++ * PIONEER DJ DDJ-1000
++ * PCM candidate is 6 channels out, 6 channels in @ 44.1 fixed.
++ * The feedback for the output is the input.
++ *
++ * Unlike the DDJ-800/RR/SR2 aliases, keep the standard USB-MIDI
++ * streaming interface available so Rekordbox-style startup/routing
++ * handshakes can run after the audio quirk binds.
++ */
++USB_DEVICE_VENDOR_SPEC(0x2b73, 0x0020),
++QUIRK_DRIVER_INFO {
++QUIRK_DATA_COMPOSITE {
++{
++QUIRK_DATA_AUDIOFORMAT(0) {
++.formats = SNDRV_PCM_FMTBIT_S24_3LE,
++.channels = 6,
++.iface = 0,
++.altsetting = 1,
++.altset_idx = 1,
++.endpoint = 0x01,
++.ep_attr = USB_ENDPOINT_XFER_ISOC|
++    USB_ENDPOINT_SYNC_ASYNC,
++.rates = SNDRV_PCM_RATE_44100,
++.rate_min = 44100,
++.rate_max = 44100,
++.nr_rates = 1,
++.rate_table = (unsigned int[]) { 44100 },
++.sync_ep = 0x82,
++.sync_iface = 0,
++.sync_altsetting = 1,
++.sync_ep_idx = 1,
++.implicit_fb = 1,
++}
++},
++{
++QUIRK_DATA_AUDIOFORMAT(0) {
++.formats = SNDRV_PCM_FMTBIT_S24_3LE,
++.channels = 6,
++.iface = 0,
++.altsetting = 1,
++.altset_idx = 1,
++.endpoint = 0x82,
++.ep_idx = 1,
++.ep_attr = USB_ENDPOINT_XFER_ISOC|
++    USB_ENDPOINT_SYNC_ASYNC|
++    USB_ENDPOINT_USAGE_IMPLICIT_FB,
++.rates = SNDRV_PCM_RATE_44100,
++.rate_min = 44100,
++.rate_max = 44100,
++.nr_rates = 1,
++.rate_table = (unsigned int[]) { 44100 }
++}
++},
++{ QUIRK_DATA_STANDARD_MIDI(2) },
++QUIRK_COMPOSITE_END
++}
++}
++},
++
++{
+ 	/*
+ 	 * Pioneer DJ / AlphaTheta DJM-A9
+ 	 * 10 channels playback & 12 channels capture @ 44.1/48/96kHz S24LE
+
+--- sound/usb/quirks.c
++++ sound/usb/quirks.c
+@@ -2275,6 +2275,8 @@
+ 		   QUIRK_FLAG_PLAYBACK_FIRST | QUIRK_FLAG_GENERIC_IMPLICIT_FB),
+ 	DEVICE_FLG(0x1397, 0x0509, /* Behringer UMC404HD */
+ 		   QUIRK_FLAG_PLAYBACK_FIRST | QUIRK_FLAG_GENERIC_IMPLICIT_FB),
++	DEVICE_FLG(0x2b73, 0x0020, /* AlphaTheta DDJ-1000 */
++		   QUIRK_FLAG_PLAYBACK_FIRST),
+ 	DEVICE_FLG(0x13e5, 0x0001, /* Serato Phono */
+ 		   QUIRK_FLAG_IGNORE_CTL_ERROR),
+ 	DEVICE_FLG(0x154e, 0x1002, /* Denon DCD-1500RE */
+
+--- sound/usb/endpoint.c
++++ sound/usb/endpoint.c
+@@ -1582,7 +1582,7 @@
+ 	if (ep->sync_source)
+ 		WRITE_ONCE(ep->sync_source->sync_sink, ep);
+ 
+-	usb_audio_dbg(ep->chip, "Starting %s EP 0x%x (running %d)\n",
++	usb_audio_info(ep->chip, "Starting %s EP 0x%x (running %d)\n",
+ 		      ep_type_name(ep->type), ep->ep_num,
+ 		      atomic_read(&ep->running));
+ 
+@@ -1612,7 +1612,7 @@
+ 
+ 	if (snd_usb_endpoint_implicit_feedback_sink(ep) &&
+ 	    !(ep->chip->quirk_flags & QUIRK_FLAG_PLAYBACK_FIRST)) {
+-		usb_audio_dbg(ep->chip, "No URB submission due to implicit fb sync\n");
++		usb_audio_info(ep->chip, "No URB submission due to implicit fb sync\n");
+ 		i = 0;
+ 		goto fill_rest;
+ 	}
+@@ -1653,12 +1653,12 @@
+ 	}
+ 
+ 	if (!i) {
+-		usb_audio_dbg(ep->chip, "XRUN at starting EP 0x%x\n",
++		usb_audio_info(ep->chip, "XRUN at starting EP 0x%x\n",
+ 			      ep->ep_num);
+ 		goto __error;
+ 	}
+ 
+-	usb_audio_dbg(ep->chip, "%d URBs submitted for EP 0x%x\n",
++	usb_audio_info(ep->chip, "%d URBs submitted for EP 0x%x\n",
+ 		      i, ep->ep_num);
+ 
+  fill_rest:
+
+@@ -1798,19 +1798,32 @@
+		spin_lock_irqsave(&ep->lock, flags);
+		if (ep->next_packet_queued >= ARRAY_SIZE(ep->next_packet)) {
+			spin_unlock_irqrestore(&ep->lock, flags);
+			usb_audio_err(ep->chip,
+				      "next package FIFO overflow EP 0x%x\n",
+				      ep->ep_num);
+			notify_xrun(ep);
+			return;
+		}
+
+		out_packet = next_packet_fifo_enqueue(ep);
+		out_packet->packets = in_ctx->packets;
+
+		/*
+		 * Keep the sink moving on empty implicit-fb packets by falling back
+		 * to its nominal packet sizing. This still avoids sending 0-byte OUT
+		 * URBs because packet_size[] remains zero and the sink computes sizes
+		 * from its current freqm value.
+		 */
+		if (bytes == 0) {
+			for (i = 0; i < in_ctx->packets; i++)
+				out_packet->packet_size[i] = 0;
+			spin_unlock_irqrestore(&ep->lock, flags);
+			usb_audio_info(ep->chip,
+				      "implicit fb sync urb on EP 0x%x carried no payload, using nominal pacing\n",
+				      sender->ep_num);
+			i = snd_usb_queue_pending_output_urbs(ep, false);
+			if (i < 0)
+				usb_audio_info(ep->chip,
+					      "implicit fb nominal queue_pending_output_urbs returned %d on EP 0x%x\n",
+					      i, ep->ep_num);
+			return;
+		}

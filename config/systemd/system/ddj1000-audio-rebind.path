@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for DDJ-1000 audio rebind requests
+
+[Path]
+PathExists=/tmp/ddj1000-audio-rebind-request
+Unit=ddj1000-audio-rebind.service
+
+[Install]
+WantedBy=multi-user.target

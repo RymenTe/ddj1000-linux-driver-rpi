@@ -1,0 +1,13 @@
+[Unit]
+Description=DDJ-1000 host-stack sinks
+After=pipewire.service pipewire-pulse.service wireplumber.service
+Wants=pipewire.service wireplumber.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/ddj1000-host-stack-service.sh start
+ExecStop=/usr/local/bin/ddj1000-host-stack-service.sh stop
+
+[Install]
+WantedBy=default.target

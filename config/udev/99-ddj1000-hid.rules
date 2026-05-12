@@ -1,0 +1,2 @@
+KERNEL=="hidraw*", ATTRS{idVendor}=="2b73", ATTRS{idProduct}=="0020", MODE="0660", GROUP="plugdev", TAG+="uaccess"
+SUBSYSTEM=="usb", ATTR{idVendor}=="2b73", ATTR{idProduct}=="0020", MODE="0660", GROUP="plugdev", TAG+="uaccess"
