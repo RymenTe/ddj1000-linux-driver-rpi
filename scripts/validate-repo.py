@@ -52,6 +52,7 @@ def check_required_files() -> list[str]:
         REPO_ROOT / "patches" / "linux" / "rpi" / "snd-usb-audio-ddj1000-rpi-6.12.patch",
         REPO_ROOT / "config" / "systemd" / "system" / "ddj1000-unlock.service",
         REPO_ROOT / "docs" / "raspberry-pi.md",
+        REPO_ROOT / "docs" / "setup-guide.md",
         REPO_ROOT / ".github" / "workflows" / "static-checks.yml",
     ]
     failures: list[str] = []
