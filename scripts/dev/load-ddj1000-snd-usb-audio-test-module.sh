@@ -38,9 +38,12 @@ echo "Unloading stock snd-usb-audio and snd-usbmidi-lib..."
 sudo modprobe -r snd_usb_audio snd_usbmidi_lib || true
 
 echo "Loading dependency modules..."
-sudo modprobe mc
-sudo modprobe videodev
-sudo modprobe snd_ump
+# Load whatever the built modules actually depend on (differs between the
+# Ubuntu and Raspberry Pi kernel configs, e.g. mc/videodev are not always needed).
+for dep in $( { modinfo -F depends "$midi_module"; modinfo -F depends "$audio_module"; } | tr ',' '\n' | sort -u); do
+    [[ "$dep" == "snd-usbmidi-lib" || "$dep" == "snd_usbmidi_lib" ]] && continue
+    sudo modprobe "$dep" || echo "[WARN] could not load dependency $dep" >&2
+done
 
 echo "Loading patched DDJ-1000 snd-usbmidi-lib test module..."
 sudo insmod "$midi_module"

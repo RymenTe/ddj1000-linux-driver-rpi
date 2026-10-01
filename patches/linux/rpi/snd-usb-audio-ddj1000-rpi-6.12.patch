@@ -1,0 +1,118 @@
+diff --git a/sound/usb/endpoint.c b/sound/usb/endpoint.c
+index c573d7464..6a42b75ab 100644
+--- a/sound/usb/endpoint.c
++++ b/sound/usb/endpoint.c
+@@ -1811,9 +1811,20 @@ static void snd_usb_handle_sync_urb(struct snd_usb_endpoint *ep,
+ 		/*
+ 		 * skip empty packets. At least M-Audio's Fast Track Ultra stops
+ 		 * streaming once it received a 0-byte OUT URB
++		 *
++		 * The AlphaTheta DDJ-1000 however keeps returning empty IN URBs
++		 * on its implicit feedback endpoint under Linux. Skipping them
++		 * would stall playback forever, so for this device queue an OUT
++		 * packet anyway; packet_size[] stays zero, which makes
++		 * snd_usb_endpoint_next_packet_size() fall back to nominal pacing.
+ 		 */
+-		if (bytes == 0)
+-			return;
++		if (bytes == 0) {
++			if (ep->chip->usb_id != USB_ID(0x2b73, 0x0020))
++				return;
++			dev_info_ratelimited(&ep->chip->dev->dev,
++					     "implicit fb EP 0x%x carried no payload, using nominal pacing\n",
++					     sender->ep_num);
++		}
+ 
+ 		spin_lock_irqsave(&ep->lock, flags);
+ 		if (ep->next_packet_queued >= ARRAY_SIZE(ep->next_packet)) {
+diff --git a/sound/usb/quirks-table.h b/sound/usb/quirks-table.h
+index 8f47f29f3..7cf269fb2 100644
+--- a/sound/usb/quirks-table.h
++++ b/sound/usb/quirks-table.h
+@@ -3103,6 +3103,73 @@ YAMAHA_DEVICE(0x7010, "UB99"),
+ 	}
+ },
+ 
++{
++	/*
++	 * PIONEER DJ / AlphaTheta DDJ-1000
++	 * PCM is 6 channels out, 6 channels in @ 44.1 fixed.
++	 * The feedback for the output is the input (implicit feedback, EP 0x82).
++	 *
++	 * Unlike the DDJ-800/RR/SR2 entries, keep the standard USB-MIDI
++	 * interface bound as well, because the controller needs a MIDI
++	 * unlock handshake before its audio path becomes active.
++	 */
++	USB_DEVICE_VENDOR_SPEC(0x2b73, 0x0020),
++	QUIRK_DRIVER_INFO {
++		/*
++		 * The device reports empty strings on some hosts, which leaves
++		 * the card as "USB Device 0x00:0x00". Pin the names so the card
++		 * id is always "DDJ1000" and the MIDI port is "DDJ-1000 MIDI 1".
++		 */
++		.vendor_name = "Pioneer DJ",
++		.product_name = "DDJ-1000",
++		QUIRK_DATA_COMPOSITE {
++			{
++				QUIRK_DATA_AUDIOFORMAT(0) {
++					.formats = SNDRV_PCM_FMTBIT_S24_3LE,
++					.channels = 6,
++					.iface = 0,
++					.altsetting = 1,
++					.altset_idx = 1,
++					.endpoint = 0x01,
++					.ep_attr = USB_ENDPOINT_XFER_ISOC|
++						USB_ENDPOINT_SYNC_ASYNC,
++					.rates = SNDRV_PCM_RATE_44100,
++					.rate_min = 44100,
++					.rate_max = 44100,
++					.nr_rates = 1,
++					.rate_table = (unsigned int[]) { 44100 },
++					.sync_ep = 0x82,
++					.sync_iface = 0,
++					.sync_altsetting = 1,
++					.sync_ep_idx = 1,
++					.implicit_fb = 1,
++				}
++			},
++			{
++				QUIRK_DATA_AUDIOFORMAT(0) {
++					.formats = SNDRV_PCM_FMTBIT_S24_3LE,
++					.channels = 6,
++					.iface = 0,
++					.altsetting = 1,
++					.altset_idx = 1,
++					.endpoint = 0x82,
++					.ep_idx = 1,
++					.ep_attr = USB_ENDPOINT_XFER_ISOC|
++						USB_ENDPOINT_SYNC_ASYNC|
++						USB_ENDPOINT_USAGE_IMPLICIT_FB,
++					.rates = SNDRV_PCM_RATE_44100,
++					.rate_min = 44100,
++					.rate_max = 44100,
++					.nr_rates = 1,
++					.rate_table = (unsigned int[]) { 44100 }
++				}
++			},
++			{ QUIRK_DATA_STANDARD_MIDI(2) },
++			QUIRK_COMPOSITE_END
++		}
++	}
++},
++
+ {
+ 	/*
+ 	 * PIONEER DJ DDJ-800
+diff --git a/sound/usb/quirks.c b/sound/usb/quirks.c
+index 1aa6c8953..8d1ac01c1 100644
+--- a/sound/usb/quirks.c
++++ b/sound/usb/quirks.c
+@@ -2385,6 +2385,8 @@ static const struct usb_audio_quirk_flags_table quirk_flags_table[] = {
+ 		   QUIRK_FLAG_GENERIC_IMPLICIT_FB),
+ 	DEVICE_FLG(0x2b53, 0x0031, /* Fiero SC-01 (firmware v1.1.0) */
+ 		   QUIRK_FLAG_GENERIC_IMPLICIT_FB),
++	DEVICE_FLG(0x2b73, 0x0020, /* AlphaTheta / Pioneer DJ DDJ-1000 */
++		   QUIRK_FLAG_PLAYBACK_FIRST),
+ 	DEVICE_FLG(0x2d95, 0x8011, /* VIVO USB-C HEADSET */
+ 		   QUIRK_FLAG_CTL_MSG_DELAY_1M),
+ 	DEVICE_FLG(0x2d95, 0x8021, /* VIVO USB-C-XE710 HEADSET */

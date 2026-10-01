@@ -7,6 +7,7 @@ repo_root="$(cd -- "$script_dir/.." && pwd)"
 alsa_source="$repo_root/config/alsa/60-ddj1000-host-stack.conf"
 service_source="$repo_root/config/systemd/user/ddj1000-host-stack.service"
 unlock_service_source="$repo_root/config/systemd/user/ddj1000-unlock.service"
+unlock_system_service_source="$repo_root/config/systemd/system/ddj1000-unlock.service"
 audio_rebind_service_source="$repo_root/config/systemd/system/ddj1000-audio-rebind.service"
 audio_rebind_path_source="$repo_root/config/systemd/system/ddj1000-audio-rebind.path"
 service_script_source="$repo_root/scripts/runtime/ddj1000-host-stack-service.sh"
@@ -33,6 +34,21 @@ user_service_target="$user_systemd_dir/ddj1000-host-stack.service"
 unlock_user_service_target="$user_systemd_dir/ddj1000-unlock.service"
 audio_rebind_service_target="$system_systemd_dir/ddj1000-audio-rebind.service"
 audio_rebind_path_target="$system_systemd_dir/ddj1000-audio-rebind.path"
+unlock_system_service_target="$system_systemd_dir/ddj1000-unlock.service"
+
+is_raspberry_pi() {
+    if [[ -r /proc/device-tree/model ]] && tr -d '\0' < /proc/device-tree/model | grep -q "Raspberry Pi"; then
+        return 0
+    fi
+    [[ "$(uname -r)" == *rpt* || "$(uname -r)" == *rpi* ]]
+}
+
+# "system": unlock runs as a root system service, no desktop sink (headless Pi,
+#           Mixxx on plain ALSA). "user": original desktop flow with pactl sink.
+service_mode="${DDJ1000_SERVICE_MODE:-}"
+if [[ -z "$service_mode" ]]; then
+    if is_raspberry_pi; then service_mode="system"; else service_mode="user"; fi
+fi
 
 have_command() {
     command -v "$1" >/dev/null 2>&1
@@ -70,6 +86,11 @@ install_files() {
     run_privileged install -m 0644 "$audio_rebind_service_source" "$audio_rebind_service_target"
     run_privileged install -m 0644 "$audio_rebind_path_source" "$audio_rebind_path_target"
 
+    if [[ "$service_mode" == "system" ]]; then
+        run_privileged install -m 0644 "$unlock_system_service_source" "$unlock_system_service_target"
+        return
+    fi
+
     mkdir -p "$user_systemd_dir"
     install -m 0644 "$service_source" "$user_service_target"
     install -m 0644 "$unlock_service_source" "$unlock_user_service_target"
@@ -78,6 +99,13 @@ install_files() {
 enable_service() {
     if ! have_command systemctl; then
         echo "[WARN] systemctl not found. Installed files only." >&2
+        return 0
+    fi
+
+    if [[ "$service_mode" == "system" ]]; then
+        run_privileged systemctl daemon-reload
+        run_privileged systemctl enable --now ddj1000-audio-rebind.path || true
+        run_privileged systemctl enable --now ddj1000-unlock.service || true
         return 0
     fi
 
@@ -93,6 +121,7 @@ disable_service() {
         systemctl --user disable --now ddj1000-host-stack.service >/dev/null 2>&1 || true
         systemctl --user disable --now ddj1000-unlock.service >/dev/null 2>&1 || true
         systemctl --user daemon-reload >/dev/null 2>&1 || true
+        run_privileged systemctl disable --now ddj1000-unlock.service >/dev/null 2>&1 || true
         run_privileged systemctl disable --now ddj1000-audio-rebind.path >/dev/null 2>&1 || true
         run_privileged systemctl daemon-reload >/dev/null 2>&1 || true
     fi
@@ -102,6 +131,7 @@ remove_files() {
     disable_service
     rm -f "$user_service_target"
     rm -f "$unlock_user_service_target"
+    run_privileged rm -f "$unlock_system_service_target"
     run_privileged rm -f "$service_script_target" "$unlock_script_target" "$audio_rebind_script_target" "$startup_prep_target" "$probe_usb_target" "$audio_stream_target" "$audio_rebind_service_target" "$audio_rebind_path_target" "$alsa_target"
     run_privileged rmdir "$support_scripts_target_dir" 2>/dev/null || true
     run_privileged rmdir "$support_root_target" 2>/dev/null || true
@@ -116,7 +146,13 @@ status() {
     printf '%-18s %s\n' "Rebind helper" "$( [[ -f "$audio_rebind_script_target" && -f "$audio_rebind_service_target" && -f "$audio_rebind_path_target" ]] && echo installed || echo missing )"
     printf '%-18s %s\n' "Prep bundle" "$( [[ -f "$startup_prep_target" && -f "$probe_usb_target" && -f "$audio_stream_target" ]] && echo installed || echo missing )"
     printf '%-18s %s\n' "User service" "$( [[ -f "$user_service_target" ]] && echo installed || echo missing )"
-    printf '%-18s %s\n' "Unlock service" "$( [[ -f "$unlock_user_service_target" ]] && echo installed || echo missing )"
+    printf '%-18s %s\n' "Service mode" "$service_mode"
+    if [[ "$service_mode" == "system" ]]; then
+        printf '%-18s %s\n' "Unlock service" "$( [[ -f "$unlock_system_service_target" ]] && echo "installed (system)" || echo missing )"
+        printf '%-18s %s\n' "Unlock state" "$( [[ -f /run/ddj1000/unlocked ]] && echo unlocked || echo "not unlocked yet" )"
+    else
+        printf '%-18s %s\n' "Unlock service" "$( [[ -f "$unlock_user_service_target" ]] && echo installed || echo missing )"
+    fi
     printf '%-18s %s\n' "Docs" "$docs_source"
     echo
     echo "Named ALSA devices expected after install:"
@@ -142,6 +178,9 @@ Notes:
     - A system-level rebind helper restores `snd_usb_audio` after the short proprietary post-unlock burst.
         - The unlock service also installs the startup-prep helper bundle under /usr/local/lib/ddj1000-linux-driver.
   - The user service creates desktop sinks only when pactl is available.
+  - DDJ1000_SERVICE_MODE=system|user overrides the service layout. Default is
+    "system" on Raspberry Pi (root unlock service, no desktop sink, ready flag
+    at /run/ddj1000/unlocked) and "user" elsewhere.
 EOF
 }
 

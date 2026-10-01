@@ -21,6 +21,17 @@ This repository contains standalone Linux-facing DDJ-1000 transport, install flo
 - licensed as `GPL-2.0-only` for kernel-adjacent patching and redistribution clarity
 - static validation exists through `scripts/validate-repo.py` and `.github/workflows/static-checks.yml`
 
+## Raspberry Pi 4 / Pi 5
+
+This `rpi4` branch adds a Raspberry Pi OS flow (64-bit, `6.12.y+rpt` kernels,
+headless). The scripts detect the Pi automatically. See `docs/raspberry-pi.md`.
+
+```bash
+bash scripts/setup-linux.sh all
+bash scripts/dev/prepare-ddj1000-snd-usb-audio-module.sh
+bash scripts/install-ddj1000-linux-stack.sh install
+```
+
 ## Quick Start
 
 Install base Linux dependencies and udev rules:
@@ -103,6 +114,7 @@ The implementation in this repository is based on original Linux integration wor
 - `docs/install.md`
 - `docs/audio-driver-notes.md`
 - `docs/validation.md`
+- `docs/raspberry-pi.md`
 
 ## Support
 

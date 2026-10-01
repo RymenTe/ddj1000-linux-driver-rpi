@@ -15,17 +15,28 @@ key_file="$build_dir/ddj1000-linux-driver-mok.key"
 der_file="$build_dir/ddj1000-linux-driver-mok.der"
 module_name="snd-usb-audio-ddj1000.ko"
 midi_module_name="snd-usbmidi-lib-test.ko"
+platform="auto"
+source_dir=""
+stable_git_url="${DDJ1000_STABLE_GIT_URL:-https://github.com/gregkh/linux}"
 
 usage() {
     cat <<EOF
-Usage: $0 [--kernel-version VERSION] [--source-package NAME]
+Usage: $0 [--kernel-version VERSION] [--platform auto|rpi|ubuntu]
+          [--source-package NAME] [--source-dir PATH]
 
-Downloads Ubuntu kernel source into /tmp, applies the DDJ-1000 snd-usb-audio
-quirk patch, builds the USB audio modules against the installed kernel headers,
-and signs the resulting modules with a local MOK key under build/ddj1000-driver.
+ubuntu: downloads Ubuntu kernel source into /tmp, applies the DDJ-1000
+        snd-usb-audio quirk patch, builds the USB audio modules against the
+        installed kernel headers and signs them with a local MOK key.
+        This does not enroll the MOK key. With Secure Boot enabled, run the
+        printed mokutil command manually, reboot, and enroll the key.
 
-This script does not enroll the MOK key. With Secure Boot enabled, run the
-printed mokutil command manually, reboot, and enroll the key in the blue MOK UI.
+rpi:    Raspberry Pi OS (Pi 4 / Pi 5, 64-bit). Takes sound/usb either from
+        --source-dir (e.g. ~/rpi-linux checked out at your running kernel) or
+        from the matching upstream stable tag (v<X.Y.Z> of \$(uname -r)),
+        applies the matching patch from patches/linux/rpi/ and
+        builds against /lib/modules/\$(uname -r)/build. No signing needed.
+
+auto (default) picks rpi on Raspberry Pi hardware or rpt/rpi kernels.
 EOF
 }
 
@@ -37,6 +48,14 @@ while [[ $# -gt 0 ]]; do
             ;;
         --source-package)
             source_package="$2"
+            shift 2
+            ;;
+        --platform)
+            platform="$2"
+            shift 2
+            ;;
+        --source-dir)
+            source_dir="$2"
             shift 2
             ;;
         -h|--help)
@@ -51,9 +70,105 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+is_raspberry_pi() {
+    if [[ -r /proc/device-tree/model ]] && tr -d '\0' < /proc/device-tree/model | grep -q "Raspberry Pi"; then
+        return 0
+    fi
+    [[ "$kernel_version" == *rpt* || "$kernel_version" == *rpi* ]]
+}
+
+if [[ "$platform" == "auto" ]]; then
+    if is_raspberry_pi; then platform="rpi"; else platform="ubuntu"; fi
+fi
+
 if [[ ! -d "/lib/modules/$kernel_version/build" ]]; then
     echo "Missing kernel headers: /lib/modules/$kernel_version/build" >&2
+    if [[ "$platform" == "rpi" ]]; then
+        echo "On Raspberry Pi OS install them with:" >&2
+        echo "  sudo apt install linux-headers-$kernel_version" >&2
+    fi
     exit 1
+fi
+
+prepare_rpi() {
+    local upstream_version series rpi_patch tree src_root head_version
+    upstream_version="${kernel_version%%[+-]*}"
+    series="$(cut -d. -f1-2 <<< "$upstream_version")"
+    rpi_patch="$repo_dir/patches/linux/rpi/snd-usb-audio-ddj1000-rpi-$series.patch"
+    tree="$work_dir/rpi-tree"
+
+    if [[ ! -f "$rpi_patch" ]]; then
+        echo "No Raspberry Pi patch for kernel series $series: $rpi_patch" >&2
+        echo "Available:" >&2
+        ls "$repo_dir/patches/linux/rpi/" >&2 || true
+        exit 1
+    fi
+
+    if [[ -n "$source_dir" ]]; then
+        src_root="$(cd -- "$source_dir" && pwd)"
+        if [[ -f "$src_root/Makefile" ]]; then
+            head_version="$(awk '/^VERSION =/{v=$3} /^PATCHLEVEL =/{p=$3} /^SUBLEVEL =/{s=$3} END{print v"."p"."s}' "$src_root/Makefile")"
+            if [[ "$head_version" != "$upstream_version" ]]; then
+                echo "[WARN] $src_root is $head_version, running kernel is $upstream_version." >&2
+                echo "[WARN] Out-of-tree sound/usb from another sublevel may fail to load (unknown symbols)." >&2
+            fi
+        fi
+    else
+        src_root="$work_dir/linux-v$upstream_version"
+        if [[ ! -f "$src_root/sound/usb/quirks-table.h" ]]; then
+            rm -rf "$src_root"
+            echo "Fetching sound/usb from $stable_git_url tag v$upstream_version..."
+            git clone --quiet --depth 1 --filter=blob:none --sparse \
+                --branch "v$upstream_version" "$stable_git_url" "$src_root"
+            git -C "$src_root" sparse-checkout set sound/usb
+        fi
+    fi
+
+    if [[ ! -f "$src_root/sound/usb/quirks-table.h" ]]; then
+        echo "No sound/usb/quirks-table.h under $src_root" >&2
+        exit 1
+    fi
+
+    # Always build from a pristine copy so a source tree that was patched by
+    # hand earlier (old quirk without the endpoint fix) is never mixed in.
+    rm -rf "$tree"
+    mkdir -p "$tree/sound"
+    cp -a "$src_root/sound/usb" "$tree/sound/usb"
+    find "$tree/sound/usb" \( -name '*.o' -o -name '*.ko' -o -name '*.mod*' -o -name '.*.cmd' \) -delete
+
+    if grep -q "0x2b73, 0x0020" "$tree/sound/usb/quirks-table.h"; then
+        echo "$src_root already contains a DDJ-1000 quirk." >&2
+        echo "Use a clean tree, e.g.: git -C $src_root checkout -- sound/usb" >&2
+        exit 1
+    fi
+
+    echo "Applying $(basename "$rpi_patch")..."
+    patch --batch --forward -p1 -d "$tree" < "$rpi_patch"
+
+    echo "Building sound/usb modules against $kernel_version headers..."
+    make -C "/lib/modules/$kernel_version/build" M="$tree/sound/usb" -j"$(nproc)" modules
+
+    cp "$tree/sound/usb/snd-usb-audio.ko" "$build_dir/$module_name"
+    cp "$tree/sound/usb/snd-usbmidi-lib.ko" "$build_dir/$midi_module_name"
+
+    cat <<EOF2
+
+Built for $kernel_version:
+  $build_dir/$module_name
+  $build_dir/$midi_module_name
+
+Raspberry Pi has no Secure Boot module signing, nothing to enroll.
+
+Test-load:  bash scripts/dev/load-ddj1000-snd-usb-audio-test-module.sh
+Install:    bash scripts/install-ddj1000-audio-driver.sh install
+EOF2
+}
+
+mkdir -p "$build_dir"
+if [[ "$platform" == "rpi" ]]; then
+    mkdir -p "$work_dir"
+    prepare_rpi
+    exit 0
 fi
 
 mkdir -p "$apt_dir/lists/partial" "$apt_dir/cache/archives/partial" "$work_dir" "$build_dir"
