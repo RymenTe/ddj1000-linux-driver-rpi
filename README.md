@@ -5,7 +5,8 @@ Run a Pioneer DJ / AlphaTheta DDJ-1000 standalone on a Raspberry Pi with Mixxx.
 This is a Raspberry Pi focused fork of
 [`jan0803/ddj1000-linux-driver`](https://github.com/jan0803/ddj1000-linux-driver).
 It keeps the original DDJ-1000 driver and unlock work and adapts it to
-Raspberry Pi OS (64-bit, `6.12.y+rpt` kernels): kernel module build without an
+Raspberry Pi OS (64-bit; current Trixie with kernel 6.18 and Legacy Bookworm
+with kernel 6.12): kernel module build without an
 Ubuntu source package, a headless system service instead of a desktop session,
 and Mixxx on plain ALSA.
 
@@ -43,7 +44,7 @@ again with `bash scripts/install-ddj1000-linux-stack.sh uninstall`.
 
 ## Current Status
 
-- builds and cross-compiles for the Pi 4 (`bcm2711_defconfig`, kernel 6.12)
+- builds and cross-compiles for the Pi 4 (`bcm2711_defconfig`, kernels 6.12 and 6.18)
 - runtime on real Pi + DDJ-1000 hardware is being validated
 - the `5/6` playback bus is not conclusively identified yet
 - no DKMS packaging yet

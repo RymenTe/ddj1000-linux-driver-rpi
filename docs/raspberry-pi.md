@@ -1,15 +1,25 @@
 # Raspberry Pi 4 (and Pi 5)
 
-This branch adapts the DDJ-1000 stack to Raspberry Pi OS (Bookworm, 64-bit,
-`6.12.y+rpt-rpi-v8` kernels) for a headless setup such as MixxxPi, where Mixxx
+This branch adapts the DDJ-1000 stack to Raspberry Pi OS 64-bit for a setup
+such as MixxxPi, where Mixxx
 talks to ALSA directly and there is no desktop session.
+
+## Supported Raspberry Pi OS releases
+
+| Raspberry Pi OS | Debian | Kernel | Patch |
+|---|---|---|---|
+| current (since the 2026-06-18 images) | 13 Trixie | 6.18.y LTS (`6.18.x+rpt-rpi-v8`) | `snd-usb-audio-ddj1000-rpi-6.18.patch` |
+| Legacy | 12 Bookworm | 6.12.y LTS (`6.12.x+rpt-rpi-v8`) | `snd-usb-audio-ddj1000-rpi-6.12.patch` |
+
+The build script picks the patch from the running kernel's `X.Y` series and
+stops with a clear message if there is none (e.g. a future 6.24 kernel).
 
 ## What is different from the Ubuntu flow
 
 | Area | Ubuntu flow | Raspberry Pi flow |
 |---|---|---|
 | Kernel source | Ubuntu `deb-src` package | `sound/usb` from the upstream stable tag matching `uname -r`, or `--source-dir ~/rpi-linux` |
-| Patch | `patches/linux/snd-usb-audio-ddj1000-composite-quirk.patch` (`-p0`) | `patches/linux/rpi/snd-usb-audio-ddj1000-rpi-6.12.patch` (`-p1`, git format) |
+| Patch | `patches/linux/snd-usb-audio-ddj1000-composite-quirk.patch` (`-p0`) | one patch per kernel series in `patches/linux/rpi/` (`-p1`, git format) |
 | Module signing | local MOK key, Secure Boot enrollment | none (no Secure Boot on the Pi) |
 | Module override | `updates/` search order | `updates/` plus an explicit `/etc/depmod.d/ddj1000-linux-driver.conf` override, because the stock modules are `.ko.xz` |
 | Unlock service | `systemctl --user` unit + PipeWire sink | root system unit `ddj1000-unlock.service`, no desktop sink |
@@ -17,14 +27,17 @@ talks to ALSA directly and there is no desktop session.
 | Post-ACK silence burst | libusb on interface 0 | `aplay` on the DDJ ALSA PCM when the patched driver is bound (libusb cannot claim interface 0 then) |
 | Ready signal | none | `/run/ddj1000/unlocked` once unlock and rebind are done |
 
-## The Raspberry Pi patch
+## The Raspberry Pi patches
 
-`patches/linux/rpi/snd-usb-audio-ddj1000-rpi-6.12.patch` was generated against
-`raspberrypi/linux` branch `rpi-6.12.y` and checked to apply cleanly to upstream
-`v6.12.34` and `v6.12.111`. It cross-compiles warning-free (`W=1`) for
-`bcm2711_defconfig` (Pi 4).
+| Patch | Generated against | Checked to apply to | Build check |
+|---|---|---|---|
+| `rpi-6.12` | `raspberrypi/linux` `rpi-6.12.y` | upstream `v6.12.34`, `v6.12.111` | Pi 4 cross-compile, `W=1`, no warnings |
+| `rpi-6.18` | `raspberrypi/linux` `rpi-6.18.y` (6.18.59) | upstream `v6.18.34`, `v6.18.59` | Pi 4 cross-compile, `W=1`, no warnings; full build script run |
 
-It differs from the original patch in four ways:
+Both carry the same change; the implicit-feedback code they touch is
+identical in 6.12 and 6.18.
+
+They differ from the original upstream patch in four ways:
 
 - **The endpoint fix actually applies.** In the original patch the last
   `sound/usb/endpoint.c` hunk has no `+`/`-`/space prefixes, so `patch` skips
@@ -68,8 +81,26 @@ The script refuses a tree that already contains a DDJ-1000 quirk, so an older
 hand-patched `~/rpi-linux` cannot be mixed in by accident. It also warns when
 the checkout's version differs from the running kernel.
 
-After every kernel update (`apt full-upgrade`) rebuild and reinstall the
-modules; there is no DKMS packaging yet.
+### Kernel updates (important for live use)
+
+There is no DKMS packaging yet. After a kernel update the override module is
+missing for the new kernel, the stock driver binds the DDJ without a playback
+device, and the unlock service logs
+`[ERROR] No DDJ-1000 snd-usb-audio module installed for running kernel ...`.
+
+For a gig machine, hold the kernel and update it deliberately:
+
+```bash
+sudo apt-mark hold linux-image-rpi-v8 linux-headers-rpi-v8 linux-image-rpi-2712 linux-headers-rpi-2712
+```
+
+When you do update: `sudo apt-mark unhold ...`, `sudo apt full-upgrade`,
+reboot, then rebuild and reinstall:
+
+```bash
+bash scripts/dev/prepare-ddj1000-snd-usb-audio-module.sh
+bash scripts/install-ddj1000-audio-driver.sh install
+```
 
 ## Starting Mixxx after the unlock
 

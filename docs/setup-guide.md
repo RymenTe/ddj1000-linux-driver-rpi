@@ -54,8 +54,8 @@ Notes:
 
 | Layer | What to use |
 |---|---|
-| OS | Raspberry Pi OS 64-bit **with desktop**. The Trixie-based release is preferred (see Mixxx below); Bookworm works too |
-| Kernel | The stock Raspberry Pi kernel (`6.12.y+rpt-rpi-v8`) plus matching `linux-headers-$(uname -r)` |
+| OS | Raspberry Pi OS 64-bit **with desktop**, current Trixie-based release (recommended). Raspberry Pi OS Legacy (Bookworm) also works |
+| Kernel | The stock Raspberry Pi kernel (Trixie: `6.18.y+rpt-rpi-v8`, Legacy: `6.12.y+rpt-rpi-v8`) plus matching `linux-headers-$(uname -r)` |
 | Driver | This repository: patched `snd-usb-audio` + `snd-usbmidi-lib`, udev rules, ALSA names, unlock service |
 | DJ software | Mixxx 2.5.x |
 | Controller mapping | Community DDJ-1000 mapping for Mixxx (currently `Pioneer-DDJ_1000-scriptsV0_9_9.js` + XML) |

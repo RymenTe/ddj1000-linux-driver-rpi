@@ -716,8 +716,20 @@ def port_present(midi_port):
         return False
 
 
+def check_driver_matches_kernel():
+    """After an unattended kernel upgrade the override module is missing and
+    the stock driver binds the DDJ without a playback PCM. Say so loudly."""
+    release = os.uname().release
+    override = Path(f"/lib/modules/{release}/updates/ddj1000-linux-driver/snd-usb-audio.ko")
+    if not override.exists():
+        log(f"[ERROR] No DDJ-1000 snd-usb-audio module installed for running kernel {release}. "
+            "Rebuild and reinstall: scripts/dev/prepare-ddj1000-snd-usb-audio-module.sh && "
+            "scripts/install-ddj1000-audio-driver.sh install")
+
+
 def main():
     args = parse_args()
+    check_driver_matches_kernel()
     host_stack_restart_pending = False
     wait_for_real_reconnect = False
     wait_started_at = time.monotonic()
