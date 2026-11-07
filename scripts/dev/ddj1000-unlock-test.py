@@ -96,6 +96,7 @@ class Session:
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--midi-port", default="", help="e.g. hw:1,0,0 (default: detect via amidi -l)")
+    parser.add_argument("--device", default="", help="rawmidi node, e.g. /dev/snd/midiC1D0 (overrides --midi-port)")
     parser.add_argument("--heartbeat-ms", type=float, default=200.0)
     parser.add_argument("--timeout-s", type=float, default=20.0, help="give up if no ACK within this time")
     parser.add_argument("--hold", type=float, default=0.0, help="keep heartbeat after ACK for N s (0 = until Ctrl+C)")
@@ -103,11 +104,16 @@ def main():
     args = parser.parse_args()
 
     p = load_protocol()
-    port = args.midi_port or detect_midi_port()
-    if not port:
-        print("No DDJ-1000 MIDI port found (amidi -l)", file=sys.stderr)
-        return 2
-    path = rawmidi_path(port)
+    if args.device:
+        if not re.fullmatch(r"/dev/snd/midiC\d+D\d+", args.device):
+            raise SystemExit(f"Unsupported rawmidi device: {args.device}")
+        path = port = args.device
+    else:
+        port = args.midi_port or detect_midi_port()
+        if not port:
+            print("No DDJ-1000 MIDI port found (amidi -l)", file=sys.stderr)
+            return 2
+        path = rawmidi_path(port)
 
     stop = {"flag": False}
     signal.signal(signal.SIGINT, lambda *_: stop.update(flag=True))

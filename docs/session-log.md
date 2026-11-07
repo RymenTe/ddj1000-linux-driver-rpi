@@ -129,3 +129,21 @@ kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unloc
 - Hinweis: `speaker-test -s` nutzt eigene Reihenfolge: `-s 1` = ALSA ch1 (Master L), `-s 3` = ch2 (Master R),
   `-s 2` = ch5 („Mitte“). Erster Versuch mit `-s 2` traf daher Paar 5/6.
 - `-s 1` und `-s 3`: rc 0, keine Kernel-Fehler. **Ton am DDJ hörbar** (Rückmeldung User). Klangqualität (klar/dumpf) noch zu bestätigen.
+
+## 2026-11-07 (21:25–21:38) – Unlock ohne Heartbeat stabil, udev-Oneshot-Unlock
+
+- Nach Unlock + 1 s Heartbeat, danach **kein** Heartbeat: Audio (arecord -c 12 / aplay -c 6) ok bei
+  5 s, 15 s, 35 s, 2 min, 5 min, 10 min. Passiver MIDI-Monitor 40 s: DDJ sendet von sich aus nichts.
+  → DDJ bleibt ohne Heartbeat entsperrt; Unlock-Prozess kann den Port nach dem ACK freigeben.
+- Mixxx-Mapping (`Pioneer-DDJ_1000-scriptsV0_9_9.js`) enthält bereits Unlock (handleSysex) + 200-ms-Heartbeat.
+  MIDI-Controller in `mixxx.cfg` aber deaktiviert (`USB_Device_0x00:0x00_MIDI_1 0`, Name passt nicht zu „DDJ-1000 MIDI 1“).
+- Neu: `config/udev/92-ddj1000-unlock.rules` + `config/systemd/system/ddj1000-unlock@.service`
+  (udev → Oneshot `ddj1000-unlock-test.py --device /dev/snd/%I --hold 1`, User pi:audio, BindsTo Device).
+  Installiert nach `/etc/udev/rules.d/` bzw. `/etc/systemd/system/`. Altes `ddj1000-unlock.service` bleibt disabled.
+- Test per `udevadm trigger --action=add /dev/snd/midiC1D0`: Sequenz bis `15 02` ACK, Exit 0, Port frei, Audio ok.
+
+**Nächste Schritte**
+1. Echtes Ab-/Anstecken und Reboot testen (Unlock muss automatisch kommen).
+2. Mixxx: MIDI-Controller „DDJ-1000 MIDI 1“ mit `DDJ-1000.midi.xml` aktivieren, Audio-Device hw:DDJ1000 (6 ch out),
+   prüfen dass Mixxx nach dem Oneshot den Port bekommt und Heartbeat sendet.
+3. Altes `ddj1000-unlock.service`, `ddj1000-usb-probe`-Pfad und `ddj1000-audio-stream.py`-Aufruf aufräumen.

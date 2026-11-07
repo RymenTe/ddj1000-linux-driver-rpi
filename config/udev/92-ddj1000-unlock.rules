@@ -1,0 +1,3 @@
+# DDJ-1000: start the MIDI-only unlock once the rawmidi node of the patched snd-usb-audio bind appears.
+# %k = kernel name (e.g. midiC1D0) -> passed as instance, so the card number is never hard-coded.
+ACTION=="add", SUBSYSTEM=="sound", KERNEL=="midiC*D0", ATTRS{idVendor}=="2b73", ATTRS{idProduct}=="0020", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ddj1000-unlock@%k.service"
