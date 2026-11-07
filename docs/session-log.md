@@ -124,3 +124,8 @@ kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unloc
    Heartbeat ggf. in Mixxx-Mapping statt separatem Prozess.
 3. Capture-Slot-Belegung (12 ch) mit angeschlossener Quelle/Mic klären.
 4. `prepare-ddj1000-snd-usb-audio-module.sh` auf den 6.12.34-Commit umstellen (offen).
+
+**Hörtest 21:22–21:24** (Unlock-Testtool `--hold`, `speaker-test -D hw:1,0 -c 6 -r 44100 -F S24_3LE -t sine -f 440 -S 60`)
+- Hinweis: `speaker-test -s` nutzt eigene Reihenfolge: `-s 1` = ALSA ch1 (Master L), `-s 3` = ch2 (Master R),
+  `-s 2` = ch5 („Mitte“). Erster Versuch mit `-s 2` traf daher Paar 5/6.
+- `-s 1` und `-s 3`: rc 0, keine Kernel-Fehler. **Ton am DDJ hörbar** (Rückmeldung User). Klangqualität (klar/dumpf) noch zu bestätigen.
