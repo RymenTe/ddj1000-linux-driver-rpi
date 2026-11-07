@@ -147,3 +147,11 @@ kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unloc
 2. Mixxx: MIDI-Controller „DDJ-1000 MIDI 1“ mit `DDJ-1000.midi.xml` aktivieren, Audio-Device hw:DDJ1000 (6 ch out),
    prüfen dass Mixxx nach dem Oneshot den Port bekommt und Heartbeat sendet.
 3. Altes `ddj1000-unlock.service`, `ddj1000-usb-probe`-Pfad und `ddj1000-audio-stream.py`-Aufruf aufräumen.
+
+**Echter Replug 21:46** (DDJ ab-/angesteckt)
+- Kernel: disconnect 21:46:13, neu enumeriert 21:46:21 an `1-1.4`, Karte 1 mit 6 ch out / 12 ch in, Implicit FB Yes.
+- udev → `ddj1000-unlock@midiC1D0` automatisch gestartet (21:46:21.8), **ACK nach 2,0 s**, Port frei, Exit 0.
+- Audio danach ohne Zutun ok (arecord -c 12 / aplay -c 6 rc 0).
+- Auffällig: 1. Versuch bekam **zwei** `13 2a` auf einen `12 2a` (seedE `000053dc` – identisch zum ersten
+  Unlock nach dem Reboot, also vermutlich deterministischer Seed nach Power-up – und `27045665`); beide
+  Antworten ohne ACK, Gerät meldet erneut `11 02`. 2. Versuch nach 2-s-Cooldown → ACK. Robust, aber Ursache offen.
