@@ -41,7 +41,7 @@
 +{
 +QUIRK_DATA_AUDIOFORMAT(0) {
 +.formats = SNDRV_PCM_FMTBIT_S24_3LE,
-+.channels = 6,
++.channels = 12, /* IN ep0x82: 36-byte frames (Windows captures 3168/3204 B) */
 +.iface = 0,
 +.altsetting = 1,
 +.altset_idx = 1,

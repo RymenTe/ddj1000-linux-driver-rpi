@@ -1,5 +1,13 @@
 # DDJ-1000 Audio Driver Notes
 
+> **Update 2026-11-07 (Raspberry Pi, kernel 6.12.34):** the capture side of the quirk was wrong.
+> With the device unlocked, every `ep0x82` iso packet completed with `-EOVERFLOW` (-75) because the
+> 6-channel capture format only reserves 306 bytes per 250 µs packet. The device sends **396-byte packets
+> = 11 frames × 36 bytes**, i.e. **12 channels S24_3LE** (matching the 3168/3204-byte Windows IN transfers).
+> With capture `.channels = 12` (playback stays 6), all IN packets complete with status 0, real implicit
+> feedback works and the "carried no payload" fallback is no longer hit. The older "empty packets on 0x82"
+> observations below were most likely this overflow. See `docs/session-log.md`.
+
 Working state from the live tests:
 
 - The stock Linux binding sees `DDJ1000`, but exposes only MIDI/control, no playback PCM.
