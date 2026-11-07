@@ -1,0 +1,126 @@
+# Session-Log
+
+## 2026-11-07 – Modul-Basis repariert (Version-Mismatch)
+
+**Ist-Stand vorher**
+- Keine DDJ-Karte in `aplay -l`, `amidi -l` leer, kein `stream0`.
+- dmesg: `WARNING ... module_put` in `do_init_module` + 15× aus `snd_ctl_release`;
+  `USB device is in the shutdown state, cannot create a card instance`, `probe ... failed with error -5`.
+- `lsmod`: Refcount von `snd_usb_audio` negativ (`-667300243`).
+- `ddj1000-unlock.service` nie gestartet: systemd hat den Job wegen Ordering-Cycle
+  (`ddj1000-usb-probe.service` mit `After=multi-user.target` + `WantedBy=multi-user.target`) gelöscht.
+- `ddj1000-usb-probe.service` failed (libusb an Interface 0, verstößt gegen Regel 5).
+
+**Ursache**
+- Geladenes Modul (srcversion `857BA36…`) = `~/rpi-linux/sound/usb/snd-usb-audio.ko`:
+  `.c`-Quellen aus **6.12.85** (`rpi-6.12.y` HEAD), gebaut gegen Headers **6.12.34**.
+- Zusätzlich: `kernel/sound/usb/snd-usbmidi-lib.ko.xz` aus dem Paket fehlte, ersetzt durch Fremd-Build.
+- Neuere Builds in `updates/ddj1000-linux-driver/` waren nicht in `modules.dep` (depmod lief nicht).
+
+**Was gemacht wurde**
+- Exakten Quell-Commit des laufenden Kernels aus dem Debian-Changelog ermittelt:
+  `8f77e03530f65209a377d25023e912b288e039cd` (linux 1:6.12.34-1+rpt1~bookworm).
+- Nur `sound/usb` davon per Sparse-Checkout nach `~/kernel-src/rpi-6.12.34-8f77e03/`.
+- Gegenprobe: unveränderter Build → srcversion `48C37CC…` = Paket-Original. Quellen passen.
+- `patches/linux/snd-usb-audio-ddj1000-composite-quirk.patch` mit `-p2` auf Kopie
+  `~/kernel-src/build-ddj/` angewendet (quirks-table.h Fuzz 2, Position manuell geprüft),
+  Build ohne Warnungen (`~/build-logs/ddj-6.12.34.log`).
+  - `snd-usb-audio.ko` srcversion `A737B3875F7797F71B2717D`
+  - `snd-usbmidi-lib.ko` srcversion `AA59DD6A9357B086610D8E7` (unverändert)
+- Backup: `~/module-backups/20261107-2044/` (kernel/sound/usb, updates/ddj1000-linux-driver, modules.dep/.alias).
+- `kernel/sound/usb/` auf Paketzustand (Originale aus dem .deb), `dpkg --verify` sauber.
+- Neue Module nur in `updates/ddj1000-linux-driver/`, `depmod -a`. `modinfo -n` zeigt auf `updates/`.
+- Initramfs enthält kein snd-usb-audio → `/boot` unverändert.
+
+**Erwartung nach Reboot**
+- Kein `module_put`-WARNING, Refcount von `snd_usb_audio` klein und positiv.
+- `cat /sys/module/snd_usb_audio/srcversion` = `A737B3875F7797F71B2717D`.
+- DDJ-1000 in `aplay -l`, `amidi -l` zeigt `hw:X,0,0`.
+- `/proc/asound/cardX/stream0`: `Implicit Feedback Mode: Yes`.
+- Unlock startet weiterhin **nicht** (Ordering-Cycle) – beabsichtigt, Audio wird isoliert getestet.
+
+**Nächste Schritte**
+1. Nach Reboot obige Erwartung gegen echte Logs prüfen.
+2. Dienst-Graph: `ddj1000-usb-probe.service` aus Abhängigkeit von `unlock` entfernen, Cycle auflösen,
+   Trigger per udev/`BindsTo=` auf das DDJ-Device; Status von `ddj1000-host-stack.service` klären.
+3. Unlock isoliert testen (`11 02` → `13 2a` → Antwort → `15 02`).
+4. Implicit FB: statischer Quirk vs. DDJ-800-Variante (Parser + `is_pioneer_implicit_fb`) A/B.
+5. Kanalzahl (Quirk: 6) gegen `wMaxPacketSize` von EP 0x01/0x82 prüfen (Ziel 8ch).
+6. `prepare-ddj1000-snd-usb-audio-module.sh` auf den 6.12.34-Commit-Sparse-Checkout umstellen,
+   damit nie wieder gegen fremde Kernel-Quellen gebaut wird.
+
+## 2026-11-07 – Nach Reboot: Modul ok, Karte fehlt wegen libusb-Probe
+
+**Geprüft (Boot 20:50)**
+- `snd_usb_audio` srcversion `A737B3875F7797F71B2717D`, `snd_usbmidi_lib` `AA59DD6A…` ✔
+- Kein `module_put`-WARNING, Refcount 0 ✔ → Modul-Basis aus voriger Sitzung bestätigt.
+- ✘ Keine DDJ-Karte: `usb 1-1.1.2: USB device is in the shutdown state` / `probe … failed with error -5`.
+
+**Ursache**
+- `ddj1000-unlock.service` (System-Unit, handgemacht, nicht aus Repo) hatte `Requires=ddj1000-usb-probe.service`.
+  systemd löscht wegen Cycle nur den Unlock-Job; der Probe-Job läuft trotzdem.
+- `ddj1000-usb-probe.py --interface 0 --alt-setting 1 --endpoint 0x82` claimt per libusb Interface 0
+  → Kernel-Treiber detached → `chip->shutdown`; If 1/2 halten die Karte → Re-Probe von If 0 scheitert (-5).
+  Zeitlich: xhci `TRB DMA ptr not part of current TD` 20:51:01, Probe-Fehler 20:51:03. (Regel 5!)
+- 20:54:12 `USB disconnect` des DDJ + `xhci_hcd: Host System Error / Host halt failed -110`
+  (Ursache offen: abgesteckt oder Geräte-Reset). Tastatur/Maus am selben Hub weiter da.
+
+**Was gemacht wurde**
+- Backup: `~/module-backups/20261107-2055-systemd/` (alle `ddj1000-*` System-Units).
+- `ddj1000-usb-probe.service` entfernt und **maskiert** (→ /dev/null).
+- `ddj1000-unlock.service`: `Requires=/After=ddj1000-usb-probe` raus, `After=sound.target`; Unit **disabled**
+  (bis Audio isoliert verifiziert ist). Ordering-Cycle damit beseitigt.
+
+**Nächste Schritte**
+1. DDJ neu einstecken/einschalten → erwartet: Karte `DDJ1000` in `/proc/asound/cards`, `amidi -l` hw:X,0,0,
+   `stream0` mit `Implicit Feedback Mode: Yes`. Falls xhci weiter hängt: Reboot.
+2. Danach Unlock isoliert (`11 02` → `13 2a` → Antwort → `15 02`), dann Unit wieder enablen.
+3. Offene Punkte 4–6 aus voriger Sitzung (Implicit-FB A/B, 8ch, prepare-Skript auf 6.12.34).
+
+**Nachtrag 20:57 – xHCI tot**
+- DDJ wieder eingesteckt → **kein** Kernel-Event; Controller seit 20:54:14 im `Host System Error`.
+- xHCI-Rebind (`0000:01:00.0` unbind/bind) → `xHCI host controller not responding, assume dead`,
+  `can't setup: -110`, `probe … failed -110`. VL805 nur per Reboot wiederherstellbar → Reboot.
+- Verdacht: xhci-Fehler (`TRB DMA ptr not part of current TD ep_index 4`) stammen vom libusb-Iso-Probe auf
+  EP 0x82 und haben den VL805 destabilisiert. Nach Reboot (ohne usb-probe) prüfen, ob die xhci-Fehler weg sind.
+
+## 2026-11-07 (21:02–21:12) – Reboot ok, Unlock ok, Capture-Overflow gefunden und behoben
+
+**Nach Reboot (ohne usb-probe)** – alle Erwartungen erfüllt
+- Keine xhci-Fehler. DDJ jetzt an Port `1-1.4` (direkt am VIA-Hub). Karte 1 `DDJ1000`, MIDI `hw:1,0,0`,
+  `stream0`: Playback 6 ch, Sync EP 0x82, `Implicit Feedback Mode: Yes`. Unlock-Unit disabled, usb-probe masked.
+
+**Audio ohne Unlock**: `aplay`/`arecord` → EIO nach ~0,6 s (= ALSA-Timeout buffer·1100/rate, keine Daten).
+
+**Unlock isoliert** – neues Tool `scripts/dev/ddj1000-unlock-test.py` (ein O_RDWR-FD, Heartbeat 200 ms,
+kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unlock-service.py`).
+- Sequenz exakt wie erwartet in 5 ms: `11 02` → Prelude + `12 2a` → `13 2a` (seedE) → `14 38` → `15 02` ACK.
+  Danach sendet das DDJ den Controller-Status (CC/Notes). 126 Heartbeats fehlerfrei.
+- ⚠ `ddj1000-unlock-service.py` verletzt Regel 4 (amidi -d + parallele amidi -S) und startet nach ACK
+  `ddj1000-audio-stream.py` → `ddj1000-usb-probe.py` = libusb an If 0 (Regel 5, hat xHCI gekillt). Nicht mehr so verwenden.
+
+**Audio nach Unlock**: weiterhin EIO, aber `retire_capture_urb: N callbacks suppressed`.
+- usbmon: **jedes** IN-Paket auf EP 0x82 Status `-75` (EOVERFLOW); Kernel reservierte 306 B/Paket (17 × 18 B, 6 ch).
+- Windows-Captures (audio-driver-notes): IN 3168/3204 B in 36-B-Blöcken → Capture ist **12 ch S24_3LE (36 B/Frame)**.
+
+**Fix**: Capture-Eintrag im Quirk `.channels = 6` → `12` (Playback bleibt 6).
+- Backup: `~/module-backups/20261107-2109-capture12ch/` (alte .ko, quirks-table.h, Patch).
+- Build `~/build-logs/ddj-capture12ch.log`, keine Warnungen. `snd-usb-audio` srcversion `24BF8948BFC13B418CF2C2F`,
+  `snd-usbmidi-lib` unverändert `AA59DD6A…`. Installiert nach `updates/ddj1000-linux-driver/`, depmod, Reload.
+- Repo-Patch angepasst; Gegenprobe: Patch auf `rpi-6.12.34-8f77e03` ergibt byte-identische Build-Quellen.
+
+**Ergebnis (mit Unlock + Heartbeat)**
+- usbmon: 7490 IN-Pakete, alle Status 0, je **396 B = 11 Frames × 36 B** (= 44,1 kHz).
+- `arecord -c 12` 2 s → 3 175 200 B (exakt 2 × 44100 × 36). `aplay -c 6` 3 s → rc 0, `Status: Running`.
+- Kein „carried no payload“-Fallback mehr → echtes Implicit Feedback läuft.
+- Capture-Inhalt: pro 12-B-Gruppe `[0, laut, leise, 0]`, Peaks identisch 0x161C00, nonzero = 4/11 bzw. 5/11 Frames/Paket
+  → vermutlich strukturierte Daten, kein Audio (keine Eingänge angeschlossen). Slot-Belegung offen.
+
+**Nächste Schritte**
+1. Hörtest: `speaker-test -D hw:1,0 -c 6 -r 44100 -F S24_3LE -t sine -f 440 -s 1` bei laufendem Unlock-Test
+   → Master 1/2 klar statt dumpf?
+2. Unlock-Dienst neu aufsetzen: auf `ddj1000-unlock-test.py`-Logik (ein FD, 200 ms) umstellen, ohne libusb-Silence-Stream;
+   Trigger per udev/`BindsTo=` aufs DDJ; MIDI-Port dynamisch. Danach Mixxx: Port-Konflikt (Rawmidi exklusiv!) klären –
+   Heartbeat ggf. in Mixxx-Mapping statt separatem Prozess.
+3. Capture-Slot-Belegung (12 ch) mit angeschlossener Quelle/Mic klären.
+4. `prepare-ddj1000-snd-usb-audio-module.sh` auf den 6.12.34-Commit umstellen (offen).
