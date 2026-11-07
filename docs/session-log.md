@@ -155,3 +155,13 @@ kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unloc
 - Auffällig: 1. Versuch bekam **zwei** `13 2a` auf einen `12 2a` (seedE `000053dc` – identisch zum ersten
   Unlock nach dem Reboot, also vermutlich deterministischer Seed nach Power-up – und `27045665`); beide
   Antworten ohne ACK, Gerät meldet erneut `11 02`. 2. Versuch nach 2-s-Cooldown → ACK. Robust, aber Ursache offen.
+
+## 2026-11-07 (21:49) – Mixxx-Konfiguration
+- Mixxx-Log: `ddj1000_cue` → „Error opening stream: Device unavailable“ – master/cue sind zwei route-PCMs
+  auf demselben exklusiven hw-Gerät → Kopfhörer lief in Mixxx nie.
+- Neu: `pcm.ddj1000_6ch` (plug → `hw:DDJ1000,0`, 6 ch) in `config/alsa/60-ddj1000-host-stack.conf`, installiert;
+  `speaker-test -D ddj1000_6ch` ok.
+- Backup `~/module-backups/20261107-2149-mixxx/` (mixxx.cfg, soundconfig.xml, ALSA-Conf).
+- `soundconfig.xml`: ein Gerät `ddj1000_6ch`, Master ch 1/2, Headphones ch 3/4.
+- `mixxx.cfg`: Controller-Key `USB_Device_0x00:0x00_MIDI_1` → `DDJ-1000_MIDI_1` (Mixxx-Name „DDJ-1000 MIDI 1“), aktiviert.
+- Offen: PortAudio-Index (7 eingetragen) – Mixxx-Log beim ersten Start prüfen.
