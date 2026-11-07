@@ -36,7 +36,7 @@ index d783dae18..453d57bbb 100644
 +{
 +	/*
 +	 * PIONEER DJ / AlphaTheta DDJ-1000
-+	 * PCM is 6 channels out, 6 channels in @ 44.1 fixed.
++	 * PCM is 6 channels out, 12 channels in @ 44.1 fixed (36-byte capture frames).
 +	 * The feedback for the output is the input (implicit feedback, EP 0x82).
 +	 *
 +	 * Unlike the DDJ-800/RR/SR2 entries, keep the standard USB-MIDI
@@ -78,7 +78,7 @@ index d783dae18..453d57bbb 100644
 +			{
 +				QUIRK_DATA_AUDIOFORMAT(0) {
 +					.formats = SNDRV_PCM_FMTBIT_S24_3LE,
-+					.channels = 6,
++					.channels = 12, /* IN ep0x82: 36-byte frames, 396 B per packet */
 +					.iface = 0,
 +					.altsetting = 1,
 +					.altset_idx = 1,

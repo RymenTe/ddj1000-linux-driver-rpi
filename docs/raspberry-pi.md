@@ -144,3 +144,16 @@ whether `13 2a` arrives at all. The expected order is:
 - Validated so far: patch application and cross-compilation only. Runtime on
   real DDJ-1000 + Pi 4 hardware still needs the checklist in
   `docs/validation.md`.
+
+## Validation status (2026-11-07)
+
+| Board | OS / kernel | Patch | Result |
+|---|---|---|---|
+| Raspberry Pi 4 Model B Rev 1.5 | Bookworm, `6.12.34+rpt-rpi-v8` | `rpi-6.12` with **12-channel capture** | ✔ audio clear, implicit FB, Mixxx standalone |
+| Raspberry Pi 4 | Trixie, 6.18 | `rpi-6.18` with 12-channel capture | not yet tested on hardware |
+| Raspberry Pi 5 | – | – | not yet tested (RP1 USB instead of VL805; kernel `rpi-2712`) |
+
+Capture must be **12 channels** (36-byte frames, 396 B per 250 µs packet). With 6 channels every
+IN packet on EP 0x82 fails with `-EOVERFLOW` and implicit feedback never starts. Details, the udev
+unlock path (vendor read `0xC0/0x00 wIndex 0x8003` against "NO AUDIO DRIVER") and the Mixxx mapping
+settings are in `docs/session-log.md`, `config/mixxx/README.md` and `CLAUDE.md`.
