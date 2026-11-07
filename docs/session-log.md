@@ -245,3 +245,8 @@ kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unloc
 - Mapping ergänzt (Backup `~/.mixxx/controllers/*.backup-20261107-2254`): Filter CH1–4 → QuickEffect super1
   (CH3/4 `19/39`, `1A/3A` nach Muster, ungeprüft), LEVEL → EffectUnit1 mix, ON/OFF → Unit1 Effect1 enabled (+LED),
   Auswahl → next/prev_effect, Sync D1–4 `9x 58` → sync_enabled (+LED). Wirksam nach Mixxx-Neustart.
+- Beat FX Kanal-Wahl (User: im Uhrzeigersinn SP MIC 3 1 2 4 MASTER; gemessen 14-13-11-10-12-15-16 → rückwärts):
+  `94 10`=CH1 `11`=CH2 `12`=CH3 `13`=CH4 `14`=MASTER `15`=MIC `16`=SP → EffectUnit1 exklusiv routen.
+  FX RELEASE = Beat FX ON/OFF (`94 47`, schon gemappt). Beat Jump sitzt im Pad-Modus (Hotcue-Pads) → separat messen.
+- Push: Pi 4 → Fork `RymenTe/ddj1000-linux-driver-rpi` Branch `rpi4` (Merge statt Force, Fork-Commits bleiben);
+  beide rpi-Patches (6.12/6.18) ebenfalls auf 12 ch Capture. Pi 5 später (RP1 statt VL805, ungetestet).

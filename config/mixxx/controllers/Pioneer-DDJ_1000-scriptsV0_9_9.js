@@ -1010,3 +1010,40 @@ PioneerDDJ1000.beatFxSelect = function(channel, control, value, status, group) {
         engine.setValue(PioneerDDJ1000.BEAT_FX_EFFECT, "prev_effect", 1);
     }
 };
+
+// Beat FX channel select (rotary, clockwise: SP MIC 3 1 2 4 MASTER). Each detent sends
+// note-on 0x7F for the new position: 94 10=CH1 11=CH2 12=CH3 13=CH4 14=MASTER 15=MIC 16=SP.
+// Routes [EffectRack1_EffectUnit1] exclusively to the selected target.
+PioneerDDJ1000.BEAT_FX_UNIT = "[EffectRack1_EffectUnit1]";
+PioneerDDJ1000.beatFxTargets = function(control) {
+    switch (control) {
+    case 0x10: return ["[Channel1]"];
+    case 0x11: return ["[Channel2]"];
+    case 0x12: return ["[Channel3]"];
+    case 0x13: return ["[Channel4]"];
+    case 0x14: return ["[Master]"];
+    case 0x15: return ["[Microphone]"];
+    case 0x16: return PioneerDDJ1000.samplerGroups();
+    }
+    return [];
+};
+PioneerDDJ1000.samplerGroups = function() {
+    var count = engine.getValue("[App]", "num_samplers") || engine.getValue("[Master]", "num_samplers") || 0;
+    var groups = [];
+    for (var i = 1; i <= count; i++) {
+        groups.push("[Sampler" + i + "]");
+    }
+    return groups;
+};
+PioneerDDJ1000.beatFxChannelSelect = function(channel, control, value, status, group) {
+    if (value !== 0x7F) {
+        return;
+    }
+    var all = ["[Channel1]", "[Channel2]", "[Channel3]", "[Channel4]", "[Master]", "[Microphone]"]
+        .concat(PioneerDDJ1000.samplerGroups());
+    var targets = PioneerDDJ1000.beatFxTargets(control);
+    for (var i = 0; i < all.length; i++) {
+        engine.setValue(PioneerDDJ1000.BEAT_FX_UNIT, "group_" + all[i] + "_enable",
+            targets.indexOf(all[i]) >= 0 ? 1 : 0);
+    }
+};
