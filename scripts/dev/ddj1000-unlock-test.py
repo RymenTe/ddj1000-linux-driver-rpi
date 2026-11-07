@@ -12,6 +12,8 @@ for --hold seconds (0 = until Ctrl+C) so audio can be tested in parallel.
 """
 
 import argparse
+import ctypes
+import fcntl
 import importlib.util
 import os
 import re
@@ -39,6 +41,51 @@ def detect_midi_port():
         if match:
             return match.group(1)
     return ""
+
+
+class UsbCtrlTransfer(ctypes.Structure):
+    """struct usbdevfs_ctrltransfer"""
+    _fields_ = [("bRequestType", ctypes.c_uint8), ("bRequest", ctypes.c_uint8),
+                ("wValue", ctypes.c_uint16), ("wIndex", ctypes.c_uint16), ("wLength", ctypes.c_uint16),
+                ("timeout", ctypes.c_uint32), ("data", ctypes.c_void_p)]
+
+
+USBDEVFS_CONTROL = (3 << 30) | (ctypes.sizeof(UsbCtrlTransfer) << 16) | (ord("U") << 8) | 0
+
+
+def usb_device_node_for_rawmidi(rawmidi_node):
+    """Walk sysfs from /dev/snd/midiCxDy up to the DDJ-1000 USB device; return /dev/bus/usb/BBB/DDD."""
+    path = Path(os.path.realpath(f"/sys/class/sound/{Path(rawmidi_node).name}/device"))
+    while path != path.parent:
+        try:
+            vid = (path / "idVendor").read_text().strip()
+            pid = (path / "idProduct").read_text().strip()
+        except OSError:
+            path = path.parent
+            continue
+        if (vid, pid) != ("2b73", "0020"):
+            raise SystemExit(f"{rawmidi_node} does not belong to a DDJ-1000 ({vid}:{pid})")
+        bus = int((path / "busnum").read_text())
+        dev = int((path / "devnum").read_text())
+        return f"/dev/bus/usb/{bus:03d}/{dev:03d}"
+    raise SystemExit(f"No USB device found above {rawmidi_node}")
+
+
+def driver_presence_read(usb_node):
+    """Vendor IN request 0xC0/0x00, wValue 0, wIndex 0x8003, 2 bytes, device recipient.
+
+    Sent via usbfs without claiming any interface (snd-usb-audio/usbhid stay bound, rule 5).
+    Observed 2026-11-07: after this read the DDJ leaves 'NO AUDIO DRIVER' (loading bar, then
+    'Pioneer DJ / rekordbox' on the jog screens).
+    """
+    buf = ctypes.create_string_buffer(2)
+    ctrl = UsbCtrlTransfer(0xC0, 0x00, 0x0000, 0x8003, 2, 1000, ctypes.addressof(buf))
+    fd = os.open(usb_node, os.O_RDWR)
+    try:
+        count = fcntl.ioctl(fd, USBDEVFS_CONTROL, ctrl)
+    finally:
+        os.close(fd)
+    return buf.raw[:count]
 
 
 def rawmidi_path(port):
@@ -101,6 +148,8 @@ def main():
     parser.add_argument("--timeout-s", type=float, default=20.0, help="give up if no ACK within this time")
     parser.add_argument("--hold", type=float, default=0.0, help="keep heartbeat after ACK for N s (0 = until Ctrl+C)")
     parser.add_argument("--handshake-cooldown-s", type=float, default=2.0)
+    parser.add_argument("--driver-read", action="store_true",
+                        help="before the unlock, send the vendor 'driver presence' read (0xC0/0x00, wIndex 0x8003)")
     args = parser.parse_args()
 
     p = load_protocol()
@@ -114,6 +163,14 @@ def main():
             print("No DDJ-1000 MIDI port found (amidi -l)", file=sys.stderr)
             return 2
         path = rawmidi_path(port)
+
+    if args.driver_read:
+        usb_node = usb_device_node_for_rawmidi(path)
+        try:
+            reply = driver_presence_read(usb_node)
+            print(f"[   0.000] driver-presence read on {usb_node}: {reply.hex(' ') or '(empty)'}", flush=True)
+        except OSError as exc:
+            print(f"[   0.000] WARN driver-presence read on {usb_node} failed: {exc}", flush=True)
 
     stop = {"flag": False}
     signal.signal(signal.SIGINT, lambda *_: stop.update(flag=True))

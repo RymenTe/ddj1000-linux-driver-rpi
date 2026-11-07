@@ -192,3 +192,22 @@ kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unloc
   Heartbeat 200 ms bleibt. Nach dem letzten Variantentest ist das DDJ entsperrt (ACK).
 - Offen: Mapping liegt nur in `~/.mixxx/controllers/`, nicht im Repo → versionieren.
   Möglicher Kernel-Fix später: snd-usbmidi-lib SysEx-Ende nicht in separatem URB senden (nur falls nötig).
+
+## 2026-11-07 (22:06–22:16) – „NO AUDIO DRIVER“ gelöst: Vendor-Read 0xC0/0x00 wIndex 0x8003
+
+- Mixxx mit Heartbeat, aber ohne Handshake: Tasten/LEDs ok, Audio ok, DDJ sendet `11 02` 1×/s,
+  Jog-Displays „NO AUDIO DRIVER“. → Ein neu einsetzender Heartbeat gilt dem DDJ als neue Host-Sitzung.
+- Tests (Mixxx beendet, User schaut aufs Display):
+  1. Unlock + Heartbeat 20 s → weiter NO AUDIO DRIVER
+  2. + Audio-Stream (aplay 6 ch, frisches SET_INTERFACE) → weiter NO AUDIO DRIVER
+  3. + alte Post-ACK-Startup-State-Nachrichten (35 Stk.) → weiter NO AUDIO DRIVER
+  4. **Vendor-IN-Request `0xC0/0x00, wValue 0, wIndex 0x8003, 2 B`** (usbfs USBDEVFS_CONTROL, Device-Recipient,
+     **kein** Interface-Claim, alle Treiber bleiben gebunden) → Antwort `00 00`, danach Unlock + Audio →
+     **Ladebalken, dann „Pioneer DJ / rekordbox“** auf den Jog-Displays; bleibt auch ohne Heartbeat stehen.
+- Unlock-Tool: `--driver-read` (USB-Knoten dynamisch per sysfs vom Rawmidi-Knoten), Unit nutzt es.
+  Backup der alten Unit: `~/module-backups/20261107-2055-systemd/ddj1000-unlock@.service.v1`.
+- Echter Replug 22:15: Read `00 00` → ACK nach 2,0 s → Ladebalken → „Pioneer DJ / rekordbox“ ✔, Audio ✔.
+- Seed-Folge nach Power-up deterministisch (`000053dc`, `27045665`, dann `0daa421f`) – 1. Versuch scheitert reproduzierbar, 2. klappt.
+- Beobachtung: nach jedem Stream-Ende `xhci_hcd: ERROR Transfer event for disabled endpoint slot 4 ep 4` (EP 0x82 IN,
+  später Iso-Abschluss nach Alt 0). Bisher folgenlos – beobachten (vgl. xHCI-Tod 20:54).
+- Nächster Schritt: Mixxx starten → bleibt „Pioneer DJ / rekordbox“ trotz neuem Mixxx-Heartbeat (`11 02`-Schleife)?

@@ -1,5 +1,5 @@
 [Unit]
-Description=DDJ-1000 unlock on /dev/snd/%I (oneshot, MIDI only)
+Description=DDJ-1000 driver-presence read + unlock on /dev/snd/%I (oneshot)
 # Triggered by udev (92-ddj1000-unlock.rules). Stops together with the device on unplug.
 BindsTo=dev-snd-%i.device
 After=dev-snd-%i.device
@@ -8,7 +8,8 @@ After=dev-snd-%i.device
 Type=oneshot
 User=pi
 Group=audio
+# Vendor driver-presence read via usbfs (no interface claimed) clears "NO AUDIO DRIVER".
 # One O_RDWR rawmidi FD, 200 ms heartbeat, no libusb, no rebind. Releases the port after a
 # 1 s hold so Mixxx (mapping keeps its own 200 ms heartbeat) can open it afterwards.
-ExecStart=/usr/bin/python3 /home/pi/ddj1000-linux-driver/scripts/dev/ddj1000-unlock-test.py --device /dev/snd/%I --timeout-s 15 --hold 1
+ExecStart=/usr/bin/python3 /home/pi/ddj1000-linux-driver/scripts/dev/ddj1000-unlock-test.py --device /dev/snd/%I --driver-read --timeout-s 15 --hold 1
 TimeoutStartSec=30
