@@ -1,0 +1,7 @@
+<!DOCTYPE SoundManagerConfig>
+<SoundManagerConfig deck_count="4" latency="2" api="ALSA" force_network_clock="0" samplerate="44100" sync_buffers="0">
+ <SoundDevice alsaHwDevice="hw:1,0" portAudioIndex="1" name="DDJ-1000: USB Audio">
+  <output channel_count="2" type="Master" channel="0" index="0"/>
+  <output channel_count="2" type="Headphones" channel="2" index="0"/>
+ </SoundDevice>
+</SoundManagerConfig>

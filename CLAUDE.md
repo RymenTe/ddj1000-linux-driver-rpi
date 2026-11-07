@@ -32,11 +32,20 @@ Unlock-Handshake → ALSA-Stream → Rebind → saubere 8ch-Ausgabe ohne dumpfen
 
 ## Bekannte technische Fakten
 - Unlock: proprietärer MIDI-Challenge-Response (FNV1a32, Secret `0x680131FB`).
-  Erwartete Folge: `11 02` (ready) → `13 2a` (Challenge vom Gerät) → Antwort → `15 02` (ACK).
-  Ohne Unlock kein DSP/Audio-Routing.
-- SysEx-Heartbeat `F0 00 40 05 00 00 02 00 00 50 01 F7` alle 200 ms hält den DSP aktiv.
-- Klang dumpf = fehlendes Implicit Feedback über EP 0x82.
-  Erfolgskriterium: `Implicit Feedback Mode: Yes` in `/proc/asound/card*/stream0`.
+  Folge: Host `50 01` → `11 02` (ready) → Host Prelude + `12 2a` → `13 2a` (Challenge) → `14 38` → `15 02` (ACK).
+  Ohne Unlock liefert EP 0x82 keine Daten → `aplay`/`arecord` EIO nach ~0,6 s.
+  Seed-Folge nach Power-up deterministisch; der 1. Versuch scheitert, der 2. (nach 2 s) klappt.
+- Die `14 38`-Antwort wird nur akzeptiert, wenn das ganze SysEx in **einem** USB-Bulk-Transfer kommt.
+  Mixxx (PortMidi → ALSA-Seq) zerlegt es → Mixxx kann nicht selbst entsperren. Rawmidi + ein `os.write` geht.
+- „NO AUDIO DRIVER“ auf den Jog-Displays verschwindet erst nach dem Vendor-IN-Request
+  `0xC0/0x00, wValue 0, wIndex 0x8003, 2 B` (usbfs, Device-Recipient, ohne Interface-Claim).
+- Heartbeat `F0 00 40 05 00 00 02 00 00 50 01 F7`: ein (neu) einsetzender Heartbeat startet eine neue Host-Sitzung
+  (`11 02` 1×/s, Ladekreis), bis ein Handshake gelingt. Ohne Heartbeat bleibt eine Sitzung bestehen
+  (gemessen ≥ 10 min, Audio ok). Daher: Unlock per udev-Dienst, Mixxx-Mapping ohne Heartbeat/Handshake.
+- Audio-Format (Quirk): Playback 6 ch S24_3LE (1/2 Master, 3/4 Cue, 5/6 Aux?), **Capture 12 ch S24_3LE**
+  (36 B/Frame, 396 B/Paket). Mit 6 ch Capture: jedes IN-Paket `-75` EOVERFLOW → kein Implicit FB.
+  Erfolgskriterium: `Implicit Feedback Mode: Yes` in `stream0` **und** IN-Pakete Status 0 (usbmon).
+- libusb/usbfs-Claim an Interface 0 (alter `ddj1000-usb-probe`) hat den VL805-xHCI bis zum Reboot getötet.
 - `QUIRK_DATA_COMPOSITE` umgeht den normalen Implicit-FB-Parsing-Pfad.
 
 ## Arbeitsweise

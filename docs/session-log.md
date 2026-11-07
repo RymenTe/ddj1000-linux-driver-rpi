@@ -211,3 +211,24 @@ kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unloc
 - Beobachtung: nach jedem Stream-Ende `xhci_hcd: ERROR Transfer event for disabled endpoint slot 4 ep 4` (EP 0x82 IN,
   später Iso-Abschluss nach Alt 0). Bisher folgenlos – beobachten (vgl. xHCI-Tod 20:54).
 - Nächster Schritt: Mixxx starten → bleibt „Pioneer DJ / rekordbox“ trotz neuem Mixxx-Heartbeat (`11 02`-Schleife)?
+
+## 2026-11-07 (22:20–22:41) – Standalone-Betrieb erreicht ✅
+
+- Mapping: `heartbeatEnabled: false` (beide `50 01`-Stellen in init abgesichert;
+  Backup `…scriptsV0_9_9.js.backup-20261107-2221`). Vor Mixxx-Start Unlock-Dienst erneut gelaufen.
+- Mixxx-Lauf: 5 s usbmon → 0× `50 01`, 0× `11 02`, 0× Handshake; EP 0x82 12 785 Pakete Status 0; Playback Running.
+- **User-Rückmeldung:** Ladekreis weg, „Pioneer DJ / rekordbox“, Tasten/LEDs ok, **Ton klar und deutlich,
+  Standalone-DJing möglich.** Noch ohne Funktion: FX-Pads, Beat Jump, Sync (Mapping-Arbeit).
+- Gesichert: Snapshot `~/module-backups/20261107-2241-WORKING-standalone/` (Module srcversion `24BF8948…`/`AA59DD6A…`,
+  /etc-Units, udev-Regeln, ALSA-Conf, mixxx.cfg, soundconfig.xml, Mapping). Mapping + Setup-Notizen jetzt im Repo
+  unter `config/mixxx/`. CLAUDE.md-Fakten aktualisiert.
+- Läuft noch: 30-min-Beobachtung ohne Heartbeat (`~/build-logs/mixxx-noheartbeat-*.log`).
+
+**Nächste Schritte**
+1. Ergebnis 30-min-Beobachtung auswerten; danach Langzeit (> 1 h DJ-Session) ohne Heartbeat.
+2. Mapping: FX-Pads, Beat Jump, Sync.
+3. Reboot-Test der ganzen Kette (udev-Unlock beim Booten vor Mixxx-Autostart).
+4. Aufräumen: altes `ddj1000-unlock.service`, `ddj1000-usb-probe.py`/`ddj1000-audio-stream.py`-Pfad, uncommittete
+   Änderungen an `prepare-…-module.sh`/`install-…-stack.sh` prüfen; Install-Skript auf neue Units/Regeln umstellen;
+   Unlock-Tool von `scripts/dev/` nach `scripts/runtime/` übernehmen.
+5. Optional robust: snd-usbmidi-lib so ändern, dass SysEx nicht über zwei URBs verteilt wird (Mixxx-Handshake + Heartbeat).
