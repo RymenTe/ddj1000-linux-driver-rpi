@@ -176,3 +176,19 @@ kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unloc
   `PioneerDDJ1000.incomingData = function(data, length) { PioneerDDJ1000.handleSysex(data, length); };` – `node --check` ok.
 - Nächster Schritt: Mixxx neu starten → erwartet „challenge response sent“ + „ACK 15 02 received“, keine TypeErrors;
   Headphones (ch 3/4) im selben Gerät `DDJ-1000: USB Audio` ergänzen (nur bei beendetem Mixxx).
+
+## 2026-11-07 (21:58–22:05) – Warum das Mixxx-Mapping kein ACK bekommt
+
+- Mit `incomingData`-Fix: kein TypeError mehr, Mapping beantwortet `13 2a`, aber **nie `15 02`**; DDJ sendet `11 02` 1×/s.
+- Binäres usbmon (`/dev/usbmon1`, MON_IOCX_GETX, ungekürzt): Mixxx-Antworten **byte-identisch** zur Python-Referenz.
+  Rohe URBs: Antwort geht als **zwei Bulk-URBs** raus (21 Events/84 B + `07 09 00 f7`/4 B), keine Fremd-Events dazwischen.
+- Variantentest (`/tmp`-Skript, ein FD; Log `~/build-logs/unlock-variants-2202*.log`, `-2203*.log`):
+  Basis ✔ · Mixxx-Init-Block (`03 01`, `0B 31`, `0C 00`) + Handshake ohne `11 02` ✔ · Antwort +2 ms/+5 ms ✔ ·
+  **Antwort in zwei Writes (63 + 3 B) ✘** – danach exakt das Mixxx-Bild (`11 02` 1×/s, jeder Retry scheitert).
+- **Ursache:** DDJ-1000 akzeptiert `14 38` nur, wenn das ganze SysEx in **einem** USB-Transfer ankommt.
+  PortMidi → ALSA-Seq → snd-usbmidi zerlegt es; aus dem JS-Mapping nicht steuerbar.
+- Konsequenz: Unlock nur über `ddj1000-unlock@.service` (rawmidi, eine `os.write`). Mapping:
+  `handshakeEnabled: false` → `sendHandshake()` ist No-op (Backup `…scriptsV0_9_9.js.backup-20261107-2204`);
+  Heartbeat 200 ms bleibt. Nach dem letzten Variantentest ist das DDJ entsperrt (ACK).
+- Offen: Mapping liegt nur in `~/.mixxx/controllers/`, nicht im Repo → versionieren.
+  Möglicher Kernel-Fix später: snd-usbmidi-lib SysEx-Ende nicht in separatem URB senden (nur falls nötig).
