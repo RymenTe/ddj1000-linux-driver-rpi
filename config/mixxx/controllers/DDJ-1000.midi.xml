@@ -2330,6 +2330,187 @@
                     <normal/>
                 </options>
             </control>
+            <!-- ddj1000-linux-driver 2026-11-07: filter, beat FX, sync (measured via usbmon) -->
+            <control>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>super1</key>
+                <description>Filter CH1 (MSB)</description>
+                <status>0xB6</status>
+                <midino>0x17</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <group>[QuickEffectRack1_[Channel1]]</group>
+                <key>super1</key>
+                <description>Filter CH1 (LSB)</description>
+                <status>0xB6</status>
+                <midino>0x37</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <group>[QuickEffectRack1_[Channel2]]</group>
+                <key>super1</key>
+                <description>Filter CH2 (MSB)</description>
+                <status>0xB6</status>
+                <midino>0x18</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <group>[QuickEffectRack1_[Channel2]]</group>
+                <key>super1</key>
+                <description>Filter CH2 (LSB)</description>
+                <status>0xB6</status>
+                <midino>0x38</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <group>[QuickEffectRack1_[Channel3]]</group>
+                <key>super1</key>
+                <description>Filter CH3 (MSB)</description>
+                <status>0xB6</status>
+                <midino>0x19</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <group>[QuickEffectRack1_[Channel3]]</group>
+                <key>super1</key>
+                <description>Filter CH3 (LSB)</description>
+                <status>0xB6</status>
+                <midino>0x39</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <group>[QuickEffectRack1_[Channel4]]</group>
+                <key>super1</key>
+                <description>Filter CH4 (MSB)</description>
+                <status>0xB6</status>
+                <midino>0x1A</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <group>[QuickEffectRack1_[Channel4]]</group>
+                <key>super1</key>
+                <description>Filter CH4 (LSB)</description>
+                <status>0xB6</status>
+                <midino>0x3A</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>mix</key>
+                <description>Beat FX LEVEL/DEPTH (MSB)</description>
+                <status>0xB4</status>
+                <midino>0x02</midino>
+                <options>
+                    <fourteen-bit-msb/>
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>mix</key>
+                <description>Beat FX LEVEL/DEPTH (LSB)</description>
+                <status>0xB4</status>
+                <midino>0x22</midino>
+                <options>
+                    <fourteen-bit-lsb/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxOnOff</key>
+                <description>Beat FX ON/OFF</description>
+                <status>0x94</status>
+                <midino>0x47</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxSelect</key>
+                <description>Beat FX select (3-phase)</description>
+                <status>0x94</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxSelect</key>
+                <description>Beat FX select (3-phase)</description>
+                <status>0x94</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxSelect</key>
+                <description>Beat FX select (3-phase)</description>
+                <status>0x94</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>sync_enabled</key>
+                <description>Beat Sync deck 1</description>
+                <status>0x90</status>
+                <midino>0x58</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>sync_enabled</key>
+                <description>Beat Sync deck 2</description>
+                <status>0x91</status>
+                <midino>0x58</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>sync_enabled</key>
+                <description>Beat Sync deck 3</description>
+                <status>0x92</status>
+                <midino>0x58</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>sync_enabled</key>
+                <description>Beat Sync deck 4</description>
+                <status>0x93</status>
+                <midino>0x58</midino>
+                <options>
+                    <normal/>
+                </options>
+            </control>
         </controls>
         <outputs>
             <output>
@@ -2554,6 +2735,38 @@
                 <description>Quantize LED CH4</description>
                 <status>0x93</status>
                 <midino>0x35</midino>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel1]</group>
+                <key>sync_enabled</key>
+                <description>Sync LED deck 1</description>
+                <status>0x90</status>
+                <midino>0x58</midino>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel2]</group>
+                <key>sync_enabled</key>
+                <description>Sync LED deck 2</description>
+                <status>0x91</status>
+                <midino>0x58</midino>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel3]</group>
+                <key>sync_enabled</key>
+                <description>Sync LED deck 3</description>
+                <status>0x92</status>
+                <midino>0x58</midino>
+                <minimum>0.5</minimum>
+            </output>
+            <output>
+                <group>[Channel4]</group>
+                <key>sync_enabled</key>
+                <description>Sync LED deck 4</description>
+                <status>0x93</status>
+                <midino>0x58</midino>
                 <minimum>0.5</minimum>
             </output>
         </outputs>

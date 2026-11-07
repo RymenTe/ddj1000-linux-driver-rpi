@@ -969,3 +969,44 @@ var timeTypeCH4 = 0;
 		}
 	};
 
+
+// ============================================================
+// Mixer / Beat FX additions (ddj1000-linux-driver, 2026-11-07)
+// MIDI numbers measured on the device via usbmon:
+//   Filter CH1..4      B6 17..1A (MSB) / B6 37..3A (LSB)   -> XML, 14 bit
+//   Beat FX LEVEL      B4 02 / B4 22                         -> XML, 14 bit
+//   Beat FX ON/OFF     94 47                                 -> beatFxOnOff
+//   Beat FX select     94 20/21/22 (3-phase rotary)          -> beatFxSelect
+//   Sync deck 1..4     90..93 58                             -> XML sync_enabled
+// ============================================================
+PioneerDDJ1000.BEAT_FX_EFFECT = "[EffectRack1_EffectUnit1_Effect1]";
+
+PioneerDDJ1000.beatFxOnOff = function(channel, control, value, status, group) {
+    if (value !== 0x7F) {
+        return;
+    }
+    var on = !engine.getValue(PioneerDDJ1000.BEAT_FX_EFFECT, "enabled");
+    engine.setValue(PioneerDDJ1000.BEAT_FX_EFFECT, "enabled", on);
+    midi.sendShortMsg(0x94, 0x47, on ? 0x7F : 0x00);
+};
+
+PioneerDDJ1000.beatFxSelectLast = -1;
+PioneerDDJ1000.beatFxSelect = function(channel, control, value, status, group) {
+    if (value !== 0x7F) {
+        return;
+    }
+    // The selector reports its detent as one of three notes (0x20, 0x21, 0x22) in a cycle;
+    // the step from the previous note gives the direction.
+    var pos = control - 0x20;
+    var last = PioneerDDJ1000.beatFxSelectLast;
+    PioneerDDJ1000.beatFxSelectLast = pos;
+    if (last < 0) {
+        return;
+    }
+    var step = (pos - last + 3) % 3;
+    if (step === 1) {
+        engine.setValue(PioneerDDJ1000.BEAT_FX_EFFECT, "next_effect", 1);
+    } else if (step === 2) {
+        engine.setValue(PioneerDDJ1000.BEAT_FX_EFFECT, "prev_effect", 1);
+    }
+};

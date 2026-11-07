@@ -232,3 +232,16 @@ kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unloc
    Änderungen an `prepare-…-module.sh`/`install-…-stack.sh` prüfen; Install-Skript auf neue Units/Regeln umstellen;
    Unlock-Tool von `scripts/dev/` nach `scripts/runtime/` übernehmen.
 5. Optional robust: snd-usbmidi-lib so ändern, dass SysEx nicht über zwei URBs verteilt wird (Mixxx-Handshake + Heartbeat).
+
+## 2026-11-07 (22:24–22:55) – 30 min ohne Heartbeat stabil; Mapping: Filter, Beat FX, Sync
+
+- 30-min-Beobachtung mit Mixxx, Heartbeat aus (`~/build-logs/mixxx-noheartbeat-222425.log`):
+  **0× `11 02`**, Stream alle 5 min `Running`, keine Kernel-Fehler. User: Ton klar, Standalone-DJing möglich.
+- Fehlende Funktionen: Mapping v0.9.9 hat **keine** Einträge für Filter, Beat FX, Beat Jump; „Sync“ war `sync_key` (Tonart).
+- Gemessen per usbmon (`~/build-logs/midi-controls2-225010.txt`):
+  Filter CH1 `B6 17/37`, CH2 `B6 18/38` (14 bit) · Beat FX CH-Wahl `94 10…16`, physische Reihenfolge
+  `14-13-11-10-12-15-16` · Beat FX Auswahl `94 20/21/22` (3-Phasen) · LEVEL/DEPTH `B4 02/22` · ON/OFF `94 47` ·
+  Sync D1 `90 58` · Sound Color FX `96 00…03` · unklar: Beat Jump (`90 20`?), `90/93 55↔56`, FX Release.
+- Mapping ergänzt (Backup `~/.mixxx/controllers/*.backup-20261107-2254`): Filter CH1–4 → QuickEffect super1
+  (CH3/4 `19/39`, `1A/3A` nach Muster, ungeprüft), LEVEL → EffectUnit1 mix, ON/OFF → Unit1 Effect1 enabled (+LED),
+  Auswahl → next/prev_effect, Sync D1–4 `9x 58` → sync_enabled (+LED). Wirksam nach Mixxx-Neustart.
