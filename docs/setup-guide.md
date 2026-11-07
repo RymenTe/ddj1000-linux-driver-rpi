@@ -133,8 +133,13 @@ Channels 5–6 are a third playback pair whose role is not confirmed yet
 ### Start Mixxx after the unlock
 
 The unlock service rebinds the audio driver after the handshake. Mixxx must
-not hold the device at that moment. For desktop autostart, wrap Mixxx so it
-waits for the ready flag, e.g. `~/.config/autostart/mixxx.desktop`:
+not hold the device at that moment.
+
+On the mixxx-pi-gen image the installer sets this up automatically
+(`docs/mixxx-pi-gen.md`). On other setups, copy
+`scripts/runtime/mixxx-after-ddj1000.sh` to `/usr/local/bin/mixxx-after-ddj1000`
+and start Mixxx through it, or use a minimal wrapper such as this
+`~/.config/autostart/mixxx.desktop`:
 
 ```ini
 [Desktop Entry]
@@ -147,6 +152,9 @@ Exec=sh -c 'until [ -e /run/ddj1000/unlocked ]; do sleep 1; done; exec mixxx'
 setup see `docs/raspberry-pi.md`.
 
 ## 5. Recommended system tuning
+
+On the mixxx-pi-gen image all of this is already set; skip this section
+(see `docs/mixxx-pi-gen.md`).
 
 These are common low-latency audio settings, not DDJ-specific requirements.
 Change one at a time and keep what helps.

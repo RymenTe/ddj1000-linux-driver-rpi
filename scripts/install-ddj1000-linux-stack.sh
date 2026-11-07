@@ -8,6 +8,7 @@ repo_root="$(cd -- "$script_dir/.." && pwd)"
 setup_script="$repo_root/scripts/setup-linux.sh"
 driver_script="$repo_root/scripts/install-ddj1000-audio-driver.sh"
 host_stack_script="$repo_root/scripts/install-ddj1000-host-stack.sh"
+mixxx_pi_gen_script="$repo_root/scripts/install-mixxx-pi-gen-integration.sh"
 
 run_step() {
     echo
@@ -20,9 +21,11 @@ install_stack() {
     run_step "Install DDJ udev rules" bash "$setup_script" install-udev
     run_step "Install DDJ audio-driver override" bash "$driver_script" install
     run_step "Install DDJ host-stack layer" bash "$host_stack_script" install
+    run_step "mixxx-pi-gen integration" bash "$mixxx_pi_gen_script" install
 }
 
 uninstall_stack() {
+    run_step "Remove mixxx-pi-gen integration" bash "$mixxx_pi_gen_script" uninstall
     run_step "Remove DDJ host-stack layer" bash "$host_stack_script" uninstall
     run_step "Remove DDJ audio-driver override" bash "$driver_script" uninstall
 }
@@ -31,6 +34,7 @@ status() {
     run_step "Linux setup status" bash "$setup_script" check
     run_step "DDJ audio-driver status" bash "$driver_script" status
     run_step "DDJ host-stack status" bash "$host_stack_script" status
+    run_step "mixxx-pi-gen integration" bash "$mixxx_pi_gen_script" status
 }
 
 usage() {

@@ -54,6 +54,9 @@ def check_required_files() -> list[str]:
         REPO_ROOT / "config" / "systemd" / "system" / "ddj1000-unlock.service",
         REPO_ROOT / "docs" / "raspberry-pi.md",
         REPO_ROOT / "docs" / "setup-guide.md",
+        REPO_ROOT / "docs" / "mixxx-pi-gen.md",
+        REPO_ROOT / "scripts" / "install-mixxx-pi-gen-integration.sh",
+        REPO_ROOT / "scripts" / "runtime" / "mixxx-after-ddj1000.sh",
         REPO_ROOT / ".github" / "workflows" / "static-checks.yml",
     ]
     failures: list[str] = []

@@ -12,9 +12,10 @@ and Mixxx on plain ALSA.
 
 ## Start Here
 
-1. **Hardware, wiring and software:** `docs/setup-guide.md`
-2. **Driver build, install and debugging on the Pi:** `docs/raspberry-pi.md`
-3. **Hardware test checklist:** `docs/validation.md`
+1. **Using the mixxx-pi-gen image (reference setup):** `docs/mixxx-pi-gen.md`
+2. **Hardware, wiring and software:** `docs/setup-guide.md`
+3. **Driver build, install and debugging on the Pi:** `docs/raspberry-pi.md`
+4. **Hardware test checklist:** `docs/validation.md`
 
 ## Quick Start
 
@@ -41,6 +42,8 @@ again with `bash scripts/install-ddj1000-linux-stack.sh uninstall`.
   controller clears `NO AUDIO DRIVER`, then signals readiness via
   `/run/ddj1000/unlocked`
 - `ddj1000-audio-rebind.path`: rebinds the audio driver after the unlock
+- on the [mixxx-pi-gen](https://github.com/fayaaz/mixxx-pi-gen) image: a
+  `mixxx-after-ddj1000` launcher so Mixxx starts only after the unlock
 
 ## Current Status
 
@@ -89,6 +92,7 @@ The implementation in this repository is based on original Linux integration wor
 
 ## Documents
 
+- `docs/mixxx-pi-gen.md`
 - `docs/setup-guide.md`
 - `docs/raspberry-pi.md`
 - `docs/install.md`
