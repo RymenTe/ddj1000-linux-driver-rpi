@@ -165,3 +165,14 @@ kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unloc
 - `soundconfig.xml`: ein Gerät `ddj1000_6ch`, Master ch 1/2, Headphones ch 3/4.
 - `mixxx.cfg`: Controller-Key `USB_Device_0x00:0x00_MIDI_1` → `DDJ-1000_MIDI_1` (Mixxx-Name „DDJ-1000 MIDI 1“), aktiviert.
 - Offen: PortAudio-Index (7 eingetragen) – Mixxx-Log beim ersten Start prüfen.
+
+**Erster Mixxx-Start 21:51**
+- Mixxx fand `ddj1000_6ch` nicht (PortAudio listet die conf.d-PCMs hier nicht) und schrieb `soundconfig.xml` neu:
+  `DDJ-1000: USB Audio` (hw:1,0) **nur Master** → Playback Running, EP 0x82 IN fehlerfrei 396 B. Kopfhörer fehlt noch.
+- MIDI-Controller „DDJ-1000 MIDI 1“ geöffnet (PortMidi via ALSA-Seq → fuser zeigt nichts am midiC1D0), Mapping sendet
+  bei init `handshake sent`, aber **kein ACK**; ~1/s `TypeError: Property 'incomingData' … is not a function`.
+  Ursache: Mixxx liefert SysEx nur an `<prefix>.incomingData`, die XML-Bindung `<status>0xF0</status>` greift nicht.
+- Fix im Mapping (Backup `Pioneer-DDJ_1000-scriptsV0_9_9.js.backup-20261107-2156`):
+  `PioneerDDJ1000.incomingData = function(data, length) { PioneerDDJ1000.handleSysex(data, length); };` – `node --check` ok.
+- Nächster Schritt: Mixxx neu starten → erwartet „challenge response sent“ + „ACK 15 02 received“, keine TypeErrors;
+  Headphones (ch 3/4) im selben Gerät `DDJ-1000: USB Audio` ergänzen (nur bei beendetem Mixxx).
