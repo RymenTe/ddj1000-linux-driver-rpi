@@ -31,7 +31,7 @@ Erledigt 2026-11-08 nachmittags: PAD FX1 (rekordbox-Standard), Loops/Beat Loop a
 8. Aus 2026-11-07: Langzeittest > 1 h, Reboot-Test der Kette, Install-Skripte (uncommittete Änderungen klären).
 
 ## Spätere Verbesserungen („All-in-One“, macht der User später)
-- **Waveform/Cover auf den Jog-Displays**: nur im HID-Modus (proprietär). Nötig: USBPcap-Mitschnitt Windows+rekordbox,
+- **Waveform/Cover auf den Jog-Displays**: nur im HID-Modus (proprietär). Erster Mitschnitt liegt in `~/ddj1000-captures/` (ausgewertet, Struktur bekannt, aber ohne Track); nötig: weiterer USBPcap-Mitschnitt mit geladenem Track,
   HID-Reports auf EP 0x06 (64 B) dekodieren. Siehe Recherche-Doku.
 - **Beat FX pro Kanal**: nur in Software möglich (Mixxx Unit 1 auf CH1–4/MIC/SP, nie auf Master). Effektliste in
   Pioneer-Reihenfolge, der SELECT-Raste folgen; Display zeigt im MIDI-Modus immer Pioneer-Namen.

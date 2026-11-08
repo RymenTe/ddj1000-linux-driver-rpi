@@ -74,6 +74,30 @@ Undokumentiert laut Wiki: "PC APP Connect" = Kanal 16, Note A-1 → DDJ meldet F
   Windows-Mitschnitte liegen **nicht** auf dem Pi und nicht im Repo.
 - Risiko: HID-Modus ändert vermutlich das Verhalten von MIDI/Pads – erst getrennt testen (CLAUDE.md: Subsysteme einzeln).
 
+### Erster Windows-Mitschnitt (rekordbox, HID-Modus) – Auswertung 2026-11-08
+
+Datei auf dem Pi (nicht im Repo, 48 MB): `~/ddj1000-captures/windows-rekordbox-20260505/DDJ1000_laenger.pcapng`
+(SHA-256 `f37027c5…1a49428`, USBPcap, ~30 s). Analyse ohne tshark mit `scripts/dev/analysis/usbpcap-*.py`
+(`python3 -I <skript> <datei>`; der DDJ ist dort Gerät 6, ggf. im Skript anpassen).
+
+- Gerät 6 = DDJ-1000: ISO EP 0x01 (792/810 B) und EP 0x82 (3168/3204 B) wie bekannt; Bulk EP 0x04 (MIDI-OUT,
+  meist 4 B), **HID-OUT EP 0x06: 696 Reports à 64 B**, **HID-IN EP 0x87: 20 189 Reports à 64 B** (~680/s, meist
+  Nullen; nicht-null alle mit Präfix `00 20`).
+- HID-OUT-Aufbau: **Byte 0 = Deck** (`0x10/0x20/0x30/0x40` = Deck 1–4), **Byte 1 = Befehl**, ab Byte 2 Index/Daten.
+
+| Befehl | Anzahl | Beobachtung |
+|--------|--------|-------------|
+| `0x21` | 76     | Deck-Status, nur Deck 1/2, bis 62 Byte genutzt, ~2,5/s (z. B. `10 21 18 0a 11 01 00 00 00 10 … 80 … 80 0d`) – Kandidat für Zeit/BPM/Position/Tempo |
+| `0x2c` | 584    | Blockserie Index `01…49` (73 Blöcke) je Deck, Byte 4 = `0x49` (= Anzahl). **In diesem Mitschnitt leer** → vermutlich Waveform-Blöcke, hier nur gelöscht |
+| `0x2d`, `0x2f`, `0x30` | 8/8/16 | je Deck einmal nach der `0x2c`-Serie (`…01 00 01`, `…01/02 00 02`) – Abschluss/Commit? |
+| `0x2b` | 4      | je Deck einmal am Ende (`x0 2b 01 00 01`) |
+
+- Folgerung: Der Mitschnitt zeigt Init/Leeren der Displays, aber **keinen geladenen Track mit Waveform** (alle
+  `0x2c`-Blöcke ohne Nutzdaten). Für die Waveform nötig: neuer Mitschnitt mit klar getrennten Schritten und Notizen
+  der Uhrzeit: (1) rekordbox starten, (2) Track auf Deck 1 laden, 5 s warten, (3) Play 10 s, (4) Cue setzen,
+  (5) zweiten Track auf Deck 2 laden. Dann `0x2c`-Nutzdaten gegen die Waveform-Form vergleichen und `0x21` gegen
+  Zeit/BPM. Cover-Art vermutlich ebenfalls über eine Blockserie.
+
 ## Quellen
 - [Mixxx-Wiki DDJ-1000](https://github.com/mixxxdj/mixxx/wiki/ddj-1000)
 - [pestrela/ddj](https://github.com/pestrela/ddj): MIDI-Tabelle DDJ-1000RB, Signalflüsse, Handbücher, offizielle Mappings
