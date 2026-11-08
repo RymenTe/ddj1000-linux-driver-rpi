@@ -1,4 +1,4 @@
-# Briefing für die nächste Sitzung (Stand 2026-11-08, 01:20)
+# Briefing für die nächste Sitzung (Stand 2026-11-08, 15:40)
 
 ## Wo wir stehen
 - Audio/Unlock/Standalone läuft (siehe `docs/session-log.md`, 2026-11-07). In dieser Sitzung nur **Mixxx-Mapping + Skin**.
@@ -17,29 +17,34 @@
    `timeout 1800 stdbuf -oL aseqdump -p "$(aconnect -l | awk '/DDJ-1000/{print $2}' | tr -d :):0" > ~/build-logs/midi-capture-$(date +%Y%m%d-%H%M).log`
 
 ## Offene Punkte (Priorität)
-1. **PAD FX1 Pads 1–5 ohne Wirkung** (Reverb, Echoverb HP, Sweep, Noise, Smooth Growl über `[EffectRack1_EffectUnit2]`).
-   Diagnosezeile beim Drücken: `grep -a "DDJ-1000 PadFX" ~/.mixxx/mixxx.log`. Prüfen: `preset` = `want`?
-   `E1.loaded/enabled` = 1? `route` = 1? Verdacht: Chain-Index (Liste in `effects.xml` `<ChainPresetList>` + 1 wegen „---“)
-   oder Effekt-Slot nicht enabled. Alternative ohne Effect Unit: weitere Deck-Funktionen (z. B. `beatlooproll`, Echo-Out).
-2. **„Deck 1 und 2 teilweise nicht synchron belegt“** (User-Aussage, noch nicht geklärt – nachfragen, was genau).
-   Bekannte Asymmetrie: Loop IN/OUT CH1 läuft über `LoopScaleDividePer2CH1`/`MultiplyPer2CH1` (Script),
-   CH2–4 direkt `loop_in`/`loop_out`. Shift+Sync für Deck 3/4 (`92/93 5C`) nur angenommen, nicht gemessen.
-3. **Browse im Pioneered-Skin** (Fix eingebaut, **ungetestet**): `[Sidebar],sidebar_visible` folgt dem Fokus.
-   Soll: Regler drehen öffnet Browse-Tab; BACK = Ordnerbaum ↔ Trackliste; Push im Baum = Ordner auf/zu,
-   auf Playlist → Tracks (Mixxx `GoToItem`, `librarycontrol.cpp:1018`); Push in Liste = LOAD auf das Deck.
-4. Color FX: Noise (bipolar über Script) und Dub Echo (Filter Echo) gegenhören; PITCH ist absichtlich frei.
-5. Noch unbelegt: Kopfhörer-Mix/-Level, Sampler-Vol (`B6 08/09/0C/0D`?), BEAT ◀ ▶, AUTO/TAP, Sampler-Pads,
-   SLIP, CUE/LOOP MEMORY/CALL, Shift+BACK/VIEW (`96 66/68`), Kanalfader 14 bit (`Bx 33` ungenutzt).
-6. Temporäre Diagnose wieder entfernen, wenn alles passt: `colorFxDump`/`colorFxKnobWatch`,
-   `BeatFX route`-Print, `PadFX`-Print.
-7. Wenn stabil: `DDJ-1000test` → `DDJ-1000` übernehmen (oder umbenennen) und im Repo nachziehen.
-8. Aus 2026-11-07 weiterhin offen: Langzeittest > 1 h, Reboot-Test der ganzen Kette, Aufräumen der Install-Skripte
-   (uncommittete Änderungen an `prepare-…-module.sh` / `install-…-stack.sh` – nicht von Claude, erst klären).
+Erledigt 2026-11-08 nachmittags: PAD FX1 (rekordbox-Standard), Loops/Beat Loop alle Decks, Beat FX → Hardware (MST).
+1. Shift+Beat Jump (Beat Loop) Noten `97 60–67` nur angenommen → beim Drücken `grep -a "DDJ-1000 BeatLoop" ~/.mixxx/mixxx.log`.
+2. „Deck 1/2 teilweise nicht synchron belegt“ – mit Loop-Vereinheitlichung evtl. erledigt, beim User nachfragen.
+3. Browse im Pioneered-Skin (Fix eingebaut, ungetestet), siehe Session-Log 2026-11-08 früh.
+4. Jog-Display, schnelle Verbesserungen über dokumentiertes MIDI: Tempo `Bn 16/36`, Cue-Marker `Bn 17/37`,
+   Key `9n 49/4A`, Sync `9n 59/5A` (`docs/research-jog-display-and-hw-mixer.md`).
+5. Noch unbelegt: Kopfhörer-Mix/-Level, Sampler-Vol, BEAT ◀ ▶ (wirken auf Hardware-Beat-FX), Sampler-Pads, SLIP,
+   CUE/LOOP MEMORY/CALL, Kanalfader 14 bit.
+6. Temporäre Diagnose entfernen, wenn alles passt: `colorFxDump`/`colorFxKnobWatch`, `PadFX`-, `BeatLoop`-Print,
+   `padFxSetSuper` (ungenutzt), `beatFx*`-Funktionen (ungenutzt).
+7. Wenn stabil: `DDJ-1000test` → `DDJ-1000` übernehmen und im Repo nachziehen; `rpi4` aktualisieren, User pusht.
+8. Aus 2026-11-07: Langzeittest > 1 h, Reboot-Test der Kette, Install-Skripte (uncommittete Änderungen klären).
+
+## Spätere Verbesserungen („All-in-One“, macht der User später)
+- **Waveform/Cover auf den Jog-Displays**: nur im HID-Modus (proprietär). Nötig: USBPcap-Mitschnitt Windows+rekordbox,
+  HID-Reports auf EP 0x06 (64 B) dekodieren. Siehe Recherche-Doku.
+- **Beat FX pro Kanal**: nur in Software möglich (Mixxx Unit 1 auf CH1–4/MIC/SP, nie auf Master). Effektliste in
+  Pioneer-Reihenfolge, der SELECT-Raste folgen; Display zeigt im MIDI-Modus immer Pioneer-Namen.
+- Hardware-Kanalmischen über USB: beim DDJ-1000 nicht vorgesehen (nur DDJ-1000SRT). Offen: Playback 5/6 und
+  die 12 Capture-Kanäle zuordnen (`USB: FX SEND …`, `USB: MIX (REC OUT)`?).
 
 ## Fakten, die man sonst neu herausfinden muss
 - Chain-Preset-Index in Mixxx 2.5.3 = 0-basiert mit „---“ an Position 0 (Quick-Effect- und normale Liste).
 - DDJ sendet echte Note-offs (`8x`) – im XML eigene Einträge nötig, wenn das Loslassen zählt.
 - Bei jedem Mapping-Laden schickt der DDJ einen Status-Dump (Fader, Regler, Schalter, Beat-FX-Kanal).
 - Mixxx überschreibt die Mapping-Datei, wenn im MIDI-Learning gespeichert wird → vorher neu laden.
+- Eigene Effekt-Presets mit festen Werten statt super1-Links (Links bewegen die Parameter nicht zuverlässig);
+  neue Presets nur bei beendetem Mixxx in `effects.xml` eintragen (Mixxx überschreibt die Datei beim Beenden).
+- Mixxx-Log nur mit `--log-flush-level debug` sofort lesbar (ist im Autostart gesetzt).
 - Push: Branch `rpi4` auf Fork `RymenTe/ddj1000-linux-driver-rpi`, der User pusht selbst:
   `git -C ~/ddj1000-linux-driver push fork rpi4:rpi4`.

@@ -411,16 +411,6 @@
                 </options>
             </control>
             <control>
-                <group>[EffectRack1_EffectUnit1]</group>
-                <key>mix</key>
-                <description>Beat FX LEVEL/DEPTH (MSB)</description>
-                <status>0xB4</status>
-                <midino>0x02</midino>
-                <options>
-                    <fourteen-bit-msb />
-                </options>
-            </control>
-            <control>
                 <group>[Channel1]</group>
                 <key>hotcue_4_activate</key>
                 <description>HotCue 4 CH1</description>
@@ -1357,16 +1347,6 @@
                 </options>
             </control>
             <control>
-                <group>[Master]</group>
-                <key>PioneerDDJ1000.beatFxChannelSelect</key>
-                <description>Beat FX channel select CH1</description>
-                <status>0x94</status>
-                <midino>0x10</midino>
-                <options>
-                    <script-binding />
-                </options>
-            </control>
-            <control>
                 <group>[Channel1]</group>
                 <key>PioneerDDJ1000.DimLoopButton</key>
                 <description>Dim Loop Out Button CH1</description>
@@ -1442,36 +1422,6 @@
                 <description>OUT Loop CH4</description>
                 <status>0x93</status>
                 <midino>0x11</midino>
-                <options>
-                    <script-binding />
-                </options>
-            </control>
-            <control>
-                <group>[Master]</group>
-                <key>PioneerDDJ1000.beatFxChannelSelect</key>
-                <description>Beat FX channel select CH2</description>
-                <status>0x94</status>
-                <midino>0x11</midino>
-                <options>
-                    <script-binding />
-                </options>
-            </control>
-            <control>
-                <group>[Master]</group>
-                <key>PioneerDDJ1000.beatFxChannelSelect</key>
-                <description>Beat FX channel select CH3</description>
-                <status>0x94</status>
-                <midino>0x12</midino>
-                <options>
-                    <script-binding />
-                </options>
-            </control>
-            <control>
-                <group>[Master]</group>
-                <key>PioneerDDJ1000.beatFxChannelSelect</key>
-                <description>Beat FX channel select CH4</description>
-                <status>0x94</status>
-                <midino>0x13</midino>
                 <options>
                     <script-binding />
                 </options>
@@ -1557,16 +1507,6 @@
                 </options>
             </control>
             <control>
-                <group>[Master]</group>
-                <key>PioneerDDJ1000.beatFxChannelSelect</key>
-                <description>Beat FX channel select MASTER</description>
-                <status>0x94</status>
-                <midino>0x14</midino>
-                <options>
-                    <script-binding />
-                </options>
-            </control>
-            <control>
                 <group>[Channel1]</group>
                 <key>reverse</key>
                 <description>Reverse CH1</description>
@@ -1604,26 +1544,6 @@
                 <midino>0x15</midino>
                 <options>
                     <normal />
-                </options>
-            </control>
-            <control>
-                <group>[Master]</group>
-                <key>PioneerDDJ1000.beatFxChannelSelect</key>
-                <description>Beat FX channel select MIC</description>
-                <status>0x94</status>
-                <midino>0x15</midino>
-                <options>
-                    <script-binding />
-                </options>
-            </control>
-            <control>
-                <group>[Master]</group>
-                <key>PioneerDDJ1000.beatFxChannelSelect</key>
-                <description>Beat FX channel select SP</description>
-                <status>0x94</status>
-                <midino>0x16</midino>
-                <options>
-                    <script-binding />
                 </options>
             </control>
             <control>
@@ -1707,16 +1627,6 @@
                 </options>
             </control>
             <control>
-                <group>[Master]</group>
-                <key>PioneerDDJ1000.beatFxSelect</key>
-                <description>Beat FX select (3-phase)</description>
-                <status>0x94</status>
-                <midino>0x20</midino>
-                <options>
-                    <script-binding />
-                </options>
-            </control>
-            <control>
                 <group>[Channel1]</group>
                 <key>rate</key>
                 <description>Tempo Fader LSB CH1</description>
@@ -1754,16 +1664,6 @@
                 <midino>0x20</midino>
                 <options>
                     <fourteen-bit-lsb />
-                </options>
-            </control>
-            <control>
-                <group>[Master]</group>
-                <key>PioneerDDJ1000.beatFxSelect</key>
-                <description>Beat FX select (3-phase)</description>
-                <status>0x94</status>
-                <midino>0x21</midino>
-                <options>
-                    <script-binding />
                 </options>
             </control>
             <control>
@@ -1807,16 +1707,6 @@
                 </options>
             </control>
             <control>
-                <group>[Master]</group>
-                <key>PioneerDDJ1000.beatFxSelect</key>
-                <description>Beat FX select (3-phase)</description>
-                <status>0x94</status>
-                <midino>0x22</midino>
-                <options>
-                    <script-binding />
-                </options>
-            </control>
-            <control>
                 <group>[Channel1]</group>
                 <key>PioneerDDJ1000.wheelTurn</key>
                 <description>JOG Turn CH1 (scratching)</description>
@@ -1854,16 +1744,6 @@
                 <midino>0x22</midino>
                 <options>
                     <script-binding />
-                </options>
-            </control>
-            <control>
-                <group>[EffectRack1_EffectUnit1]</group>
-                <key>mix</key>
-                <description>Beat FX LEVEL/DEPTH (LSB)</description>
-                <status>0xB4</status>
-                <midino>0x22</midino>
-                <options>
-                    <fourteen-bit-lsb />
                 </options>
             </control>
             <control>
@@ -2218,16 +2098,6 @@
                 <description>BROWSE push/LOAD CH1</description>
                 <status>0x96</status>
                 <midino>0x46</midino>
-                <options>
-                    <script-binding />
-                </options>
-            </control>
-            <control>
-                <group>[Master]</group>
-                <key>PioneerDDJ1000.beatFxOnOff</key>
-                <description>Beat FX ON/OFF</description>
-                <status>0x94</status>
-                <midino>0x47</midino>
                 <options>
                     <script-binding />
                 </options>
