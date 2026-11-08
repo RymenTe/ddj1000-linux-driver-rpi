@@ -98,7 +98,37 @@ Datei auf dem Pi (nicht im Repo, 48 MB): `~/ddj1000-captures/windows-rekordbox-2
   (5) zweiten Track auf Deck 2 laden. Dann `0x2c`-Nutzdaten gegen die Waveform-Form vergleichen und `0x21` gegen
   Zeit/BPM. Cover-Art vermutlich ebenfalls über eine Blockserie.
 
+### MIDI-Startsequenz von rekordbox (gleicher Mitschnitt, EP 0x04/0x85) und Abgleich mit jan0803
+
+`scripts/dev/analysis/usbpcap-midi-sysex.py <pcapng> 6` dekodiert USB-MIDI zu SysEx. Ablauf (Zeit in s):
+
+| t | Richtung | SysEx (nach `f0 00 40 05 00 00 02 00 00`) | Deutung |
+|---|---|---|---|
+| 16.106 | OUT/IN | `50 01` → `11 02` | Heartbeat / ready (bekannt) |
+| 16.207 | OUT | `00 0a 00 28 00 26 00 <12 Byte, wechselnd> 00…` (57 B) | ? Inhalt ändert sich pro Sitzung (Zeitstempel/Token?) |
+| 16.210 | OUT | `00 0b 2b 68 00 00 00 00` | ? |
+| 16.213 | OUT | `00 0c 00 00 02 0e 0e 00 00 00` | ? konstant |
+| 16.446 | OUT | **`03 01`** | neu, mehrfach vor dem HID-Verkehr |
+| 17.108–17.111 | OUT/IN | `12 2a` → `13 2a` → `14 38` → `15 02` | Unlock (bekannt) |
+| 17.114–17.123 | OUT | `0b 2b 68…`, `0a …`, `0c …` erneut | |
+| 18.600 | OUT | `03 01` | danach erster HID-OUT `10 21 …` bei 18.729 |
+| 18.733 | OUT | `00 0a …` mit anderem Inhalt, dann `00 0b 31 00 00 00 00` + `00 0c …` mehrfach | |
+| 19.638 | OUT | `03 01` + `00 0a …` | direkt danach HID-`0x2c`-Blockserie (19.65 s) |
+| danach | OUT | `50 01` alle ~200 ms | Heartbeat läuft bei rekordbox dauerhaft (5 Hz) |
+
+Abgleich mit dem Upstream-Repo **jan0803/ddj1000-linux-driver** (`origin/main`, `scripts/runtime/ddj1000-unlock-service.py`):
+- Dort heißen genau diese Nachrichten `DDJ_JOGSCREEN_ENABLE_MESSAGES` (`00 0a …`, `00 0b 35 60 14 01 00 00`, `00 0c 00 00 02 0e 0e …`)
+  und `DDJ_JOGSCREEN_ENABLE_6_MESSAGES` (`00 0b 31 …`, `00 0a …`, `00 0c …`); gesendet nach dem ACK per `amidi`.
+  Die 12 wechselnden Bytes in `00 0a` sind bei jan0803 andere als in unserem Mitschnitt → Bedeutung offen.
+- Außerdem: `DDJ_BROWSER_STARTUP_MESSAGES` (`9f 40 7f`, `9f 41 00`, `9f 42 7f`, `bf 41…4a …`) und je Deck Noten
+  `0B/47/0C/50` = 0; HID-Report-Deskriptor wird gelesen (`0x81/0x06 wValue 0x2200 wIndex 3 len 0x74`).
+- **`03 01` fehlt bei jan0803** und in unserem Unlock-Tool. Hypothese: schaltet den DDJ in den HID-/Display-Modus
+  (HID-OUT beginnt jeweils kurz danach). Nicht getestet – Risiko: im HID-Modus verhalten sich MIDI/Pads/Beat FX
+  anders (Mixxx-Wiki), daher zuerst isoliert ohne Mixxx probieren und mit `aseqdump` vergleichen.
+- Unser Unlock-Tool sendet keine dieser Nachrichten; Jog-Displays zeigen trotzdem Zeit/BPM über das MIDI-Mapping.
+
 ## Quellen
+- Upstream [jan0803/ddj1000-linux-driver](https://github.com/jan0803/ddj1000-linux-driver) (`origin/main`)
 - [Mixxx-Wiki DDJ-1000](https://github.com/mixxxdj/mixxx/wiki/ddj-1000)
 - [pestrela/ddj](https://github.com/pestrela/ddj): MIDI-Tabelle DDJ-1000RB, Signalflüsse, Handbücher, offizielle Mappings
 - DDJ-1000 Bedienungsanleitung (DRI1516A), "Verwendung externer Eingänge", "Signalfluss"
