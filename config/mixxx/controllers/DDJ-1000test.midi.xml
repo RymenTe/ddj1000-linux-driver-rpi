@@ -1308,22 +1308,22 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>loop_in</key>
+                <key>PioneerDDJ1000.LoopScaleDividePer2CH1</key>
                 <description>IN LoopCH2</description>
                 <status>0x91</status>
                 <midino>0x10</midino>
                 <options>
-                    <normal />
+                    <script-binding />
                 </options>
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>loop_in</key>
+                <key>PioneerDDJ1000.LoopScaleDividePer2CH1</key>
                 <description>IN LoopCH3</description>
                 <status>0x92</status>
                 <midino>0x10</midino>
                 <options>
-                    <normal />
+                    <script-binding />
                 </options>
             </control>
             <control>
@@ -1338,12 +1338,12 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>loop_in</key>
+                <key>PioneerDDJ1000.LoopScaleDividePer2CH1</key>
                 <description>IN LoopCH4</description>
                 <status>0x93</status>
                 <midino>0x10</midino>
                 <options>
-                    <normal />
+                    <script-binding />
                 </options>
             </control>
             <control>
@@ -1398,12 +1398,12 @@
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>loop_out</key>
+                <key>PioneerDDJ1000.LoopScaleMultiplyPer2CH1</key>
                 <description>OUT Loop CH2</description>
                 <status>0x91</status>
                 <midino>0x11</midino>
                 <options>
-                    <normal />
+                    <script-binding />
                 </options>
             </control>
             <control>
@@ -1418,12 +1418,12 @@
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>loop_out</key>
+                <key>PioneerDDJ1000.LoopScaleMultiplyPer2CH1</key>
                 <description>OUT Loop CH3</description>
                 <status>0x92</status>
                 <midino>0x11</midino>
                 <options>
-                    <normal />
+                    <script-binding />
                 </options>
             </control>
             <control>
@@ -1438,12 +1438,12 @@
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>loop_out</key>
+                <key>PioneerDDJ1000.LoopScaleMultiplyPer2CH1</key>
                 <description>OUT Loop CH4</description>
                 <status>0x93</status>
                 <midino>0x11</midino>
                 <options>
-                    <normal />
+                    <script-binding />
                 </options>
             </control>
             <control>
@@ -1518,42 +1518,42 @@
             </control>
             <control>
                 <group>[Channel1]</group>
-                <key>beatloop_4_toggle</key>
+                <key>PioneerDDJ1000.beatLoop4OrExit</key>
                 <description>4-Beat-Loop CH1</description>
                 <status>0x90</status>
                 <midino>0x14</midino>
                 <options>
-                    <normal />
+                    <script-binding />
                 </options>
             </control>
             <control>
                 <group>[Channel2]</group>
-                <key>beatloop_4_toggle</key>
+                <key>PioneerDDJ1000.beatLoop4OrExit</key>
                 <description>4-Beat-Loop CH2</description>
                 <status>0x91</status>
                 <midino>0x14</midino>
                 <options>
-                    <normal />
+                    <script-binding />
                 </options>
             </control>
             <control>
                 <group>[Channel3]</group>
-                <key>beatloop_4_toggle</key>
+                <key>PioneerDDJ1000.beatLoop4OrExit</key>
                 <description>4-Beat-Loop CH3</description>
                 <status>0x92</status>
                 <midino>0x14</midino>
                 <options>
-                    <normal />
+                    <script-binding />
                 </options>
             </control>
             <control>
                 <group>[Channel4]</group>
-                <key>beatloop_4_toggle</key>
+                <key>PioneerDDJ1000.beatLoop4OrExit</key>
                 <description>4-Beat-Loop CH4</description>
                 <status>0x93</status>
                 <midino>0x14</midino>
                 <options>
-                    <normal />
+                    <script-binding />
                 </options>
             </control>
             <control>
@@ -4629,6 +4629,326 @@
                 <midino>0x2F</midino>
                 <options>
                     <normal />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 1 (Shift+BEAT JUMP), deck 1 - note assumed</description>
+                <status>0x97</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 2 (Shift+BEAT JUMP), deck 1 - note assumed</description>
+                <status>0x97</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 3 (Shift+BEAT JUMP), deck 1 - note assumed</description>
+                <status>0x97</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 4 (Shift+BEAT JUMP), deck 1 - note assumed</description>
+                <status>0x97</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 5 (Shift+BEAT JUMP), deck 1 - note assumed</description>
+                <status>0x97</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 6 (Shift+BEAT JUMP), deck 1 - note assumed</description>
+                <status>0x97</status>
+                <midino>0x65</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 7 (Shift+BEAT JUMP), deck 1 - note assumed</description>
+                <status>0x97</status>
+                <midino>0x66</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 8 (Shift+BEAT JUMP), deck 1 - note assumed</description>
+                <status>0x97</status>
+                <midino>0x67</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 1 (Shift+BEAT JUMP), deck 2 - note assumed</description>
+                <status>0x99</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 2 (Shift+BEAT JUMP), deck 2 - note assumed</description>
+                <status>0x99</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 3 (Shift+BEAT JUMP), deck 2 - note assumed</description>
+                <status>0x99</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 4 (Shift+BEAT JUMP), deck 2 - note assumed</description>
+                <status>0x99</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 5 (Shift+BEAT JUMP), deck 2 - note assumed</description>
+                <status>0x99</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 6 (Shift+BEAT JUMP), deck 2 - note assumed</description>
+                <status>0x99</status>
+                <midino>0x65</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 7 (Shift+BEAT JUMP), deck 2 - note assumed</description>
+                <status>0x99</status>
+                <midino>0x66</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 8 (Shift+BEAT JUMP), deck 2 - note assumed</description>
+                <status>0x99</status>
+                <midino>0x67</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 1 (Shift+BEAT JUMP), deck 3 - note assumed</description>
+                <status>0x9B</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 2 (Shift+BEAT JUMP), deck 3 - note assumed</description>
+                <status>0x9B</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 3 (Shift+BEAT JUMP), deck 3 - note assumed</description>
+                <status>0x9B</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 4 (Shift+BEAT JUMP), deck 3 - note assumed</description>
+                <status>0x9B</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 5 (Shift+BEAT JUMP), deck 3 - note assumed</description>
+                <status>0x9B</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 6 (Shift+BEAT JUMP), deck 3 - note assumed</description>
+                <status>0x9B</status>
+                <midino>0x65</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 7 (Shift+BEAT JUMP), deck 3 - note assumed</description>
+                <status>0x9B</status>
+                <midino>0x66</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 8 (Shift+BEAT JUMP), deck 3 - note assumed</description>
+                <status>0x9B</status>
+                <midino>0x67</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 1 (Shift+BEAT JUMP), deck 4 - note assumed</description>
+                <status>0x9D</status>
+                <midino>0x60</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 2 (Shift+BEAT JUMP), deck 4 - note assumed</description>
+                <status>0x9D</status>
+                <midino>0x61</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 3 (Shift+BEAT JUMP), deck 4 - note assumed</description>
+                <status>0x9D</status>
+                <midino>0x62</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 4 (Shift+BEAT JUMP), deck 4 - note assumed</description>
+                <status>0x9D</status>
+                <midino>0x63</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 5 (Shift+BEAT JUMP), deck 4 - note assumed</description>
+                <status>0x9D</status>
+                <midino>0x64</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 6 (Shift+BEAT JUMP), deck 4 - note assumed</description>
+                <status>0x9D</status>
+                <midino>0x65</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 7 (Shift+BEAT JUMP), deck 4 - note assumed</description>
+                <status>0x9D</status>
+                <midino>0x66</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.beatLoopPad</key>
+                <description>BEAT LOOP pad 8 (Shift+BEAT JUMP), deck 4 - note assumed</description>
+                <status>0x9D</status>
+                <midino>0x67</midino>
+                <options>
+                    <script-binding />
                 </options>
             </control>
         </controls>
