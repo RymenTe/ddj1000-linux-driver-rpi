@@ -285,3 +285,21 @@ Pitch Shift destabilisierte Audio), Color-Regler per Script (12 Uhr = aus), PAD 
 PAD FX2 Loop-Roll 1/16–8, Crossfader, Shift+Sync = Sync-Leader, VIEW/BACK/Push-Browse.
 
 Offen → siehe `docs/BRIEFING-next-session.md`.
+
+## 2026-11-08 (12:50–15:40) – PAD FX nach rekordbox-Standard, Loops alle Decks, Beat FX → Hardware
+
+- Mixxx startet jetzt mit `--log-flush-level debug` (`~/.config/sway/config:247`, `~/.config/waybar/mixxx.sh`),
+  sonst landen `print()`-Zeilen erst beim Beenden im Log (32-KB-Puffer).
+- PAD FX1 stumm/zu laut: (1) Effekt-Slots von Unit 2 standen auf `enabled=0`; (2) super1→meta→Parameter-Links
+  bewegten die Parameter nicht (Reverb blieb bei Send 0, Noise bei 1). Lösung: eigene Chain-Presets
+  `PadFX …` mit festen Werten, ohne Links (`config/mixxx/effects/chains/`, in `effects.xml` nur bei beendetem Mixxx
+  eintragen, Index = Listenposition + 1). Belegung = rekordbox-Standard: Roll 1/2, Sweep, Flanger 16, V.Brake 3/4,
+  Echo 1/4, Echo 1/2, Reverb 50, Echo 1/2 lang. User: „Sehr geil, geht alles.“
+- Loop IN/OUT (Halbieren/Verdoppeln bei aktivem Loop) für Deck 1–4; 4-BEAT-LOOP beendet jeden aktiven Loop;
+  Beat Loop (Shift+Beat Jump) `97/99/9B/9D 60–67` (Noten angenommen, Diagnose `DDJ-1000 BeatLoop`).
+- Beat FX: wirkte nur auf MST. Ursache: DDJ-1000 im Internal Mode – Hardware-Beat-FX nur im Master-Weg
+  (`USB: MASTER OUT` läuft vor BEAT FX MASTER), Kanalzüge bekommen nur Line/Phono. Software-Versuch in Mixxx
+  (Unit 1) hatte zusätzlich Autopan geladen. **Mixxx-Beat-FX-Mapping zurückgebaut** (Unit 1 wird beim Init
+  ausgeschaltet); Hardware macht Beat FX auf MST. Details: `docs/research-jog-display-and-hw-mixer.md`.
+- Backups: `~/.mixxx/controllers/*.backup-20261108-{1254,1305,1330,1419,1532}`,
+  `~/.mixxx/effects.xml.backup-20261108-133122`, `~/.config/{sway/config,waybar/mixxx.sh}.backup-20261108-1305`.

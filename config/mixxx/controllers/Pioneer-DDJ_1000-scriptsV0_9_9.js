@@ -983,13 +983,59 @@ var timeTypeCH4 = 0;
 // ============================================================
 PioneerDDJ1000.BEAT_FX_EFFECT = "[EffectRack1_EffectUnit1_Effect1]";
 
+// Beat FX type list (2026-11-08): own chain presets with FIXED values (see PAD FX1); stepping
+// through all Mixxx effects landed on EQs/Autopan/Metronome, which are inaudible on one deck.
+// LEVEL/DEPTH = unit mix (XML). Index = position in effects.xml <ChainPresetList> + 1.
+PioneerDDJ1000.BEAT_FX_LIST = [
+    {name: "ECHO 1/2", index: 13},
+    {name: "ECHO 1/4", index: 12},
+    {name: "ECHO 1/2 LONG", index: 14},
+    {name: "REVERB", index: 15},
+    {name: "FLANGER", index: 16},
+    {name: "FILTER (HPF)", index: 17},
+];
+PioneerDDJ1000.beatFxPos = 0;
+PioneerDDJ1000.beatFxOn = false;
+PioneerDDJ1000.beatFxApplyOn = function() {
+    for (var e = 1; e <= 3; e++) {
+        var g = "[EffectRack1_EffectUnit1_Effect" + e + "]";
+        if (engine.getValue(g, "loaded")) { engine.setValue(g, "enabled", PioneerDDJ1000.beatFxOn ? 1 : 0); }
+    }
+};
+PioneerDDJ1000.beatFxLoad = function() {
+    var fx = PioneerDDJ1000.BEAT_FX_LIST[PioneerDDJ1000.beatFxPos];
+    engine.setValue(PioneerDDJ1000.BEAT_FX_UNIT, "enabled", 1);
+    engine.setValue(PioneerDDJ1000.BEAT_FX_UNIT, "loaded_chain_preset", fx.index);
+    PioneerDDJ1000.beatFxApplyOn();
+    engine.beginTimer(60, PioneerDDJ1000.beatFxApplyOn, true);   // preset load may reset slot flags
+    print("DDJ-1000 BeatFX type " + fx.name + " (preset " + fx.index + ") on=" + PioneerDDJ1000.beatFxOn);
+};
+
 PioneerDDJ1000.beatFxOnOff = function(channel, control, value, status, group) {
     if (value !== 0x7F) {
         return;
     }
-    var on = !engine.getValue(PioneerDDJ1000.BEAT_FX_EFFECT, "enabled");
-    engine.setValue(PioneerDDJ1000.BEAT_FX_EFFECT, "enabled", on);
+    if (engine.getValue(PioneerDDJ1000.BEAT_FX_UNIT, "loaded_chain_preset") !==
+        PioneerDDJ1000.BEAT_FX_LIST[PioneerDDJ1000.beatFxPos].index) {
+        PioneerDDJ1000.beatFxLoad();
+    }
+    PioneerDDJ1000.beatFxOn = !PioneerDDJ1000.beatFxOn;
+    var on = PioneerDDJ1000.beatFxOn;
+    PioneerDDJ1000.beatFxApplyOn();
     midi.sendShortMsg(0x94, 0x47, on ? 0x7F : 0x00);
+    // Diagnostics (temporary, 2026-11-08): which channel gets the FX when it is switched on
+    var u = PioneerDDJ1000.BEAT_FX_UNIT, st = "DDJ-1000 BeatFX ON/OFF -> on=" + (on ? 1 : 0) +
+        " type=" + PioneerDDJ1000.BEAT_FX_LIST[PioneerDDJ1000.beatFxPos].name + " route:";
+    ["[Channel1]", "[Channel2]", "[Channel3]", "[Channel4]", "[Master]"].forEach(function(g) {
+        if (engine.getValue(u, "group_" + g + "_enable")) { st += " " + g; }
+    });
+    st += " mix=" + engine.getValue(u, "mix").toFixed(2) + " E1.enabled=" +
+        engine.getValue(PioneerDDJ1000.BEAT_FX_EFFECT, "enabled");
+    for (var d = 1; d <= 4; d++) {
+        st += " D" + d + ".play=" + engine.getValue("[Channel" + d + "]", "play") +
+            " vol=" + engine.getValue("[Channel" + d + "]", "volume").toFixed(2);
+    }
+    print(st);
 };
 
 PioneerDDJ1000.beatFxSelectLast = -1;
@@ -1006,11 +1052,15 @@ PioneerDDJ1000.beatFxSelect = function(channel, control, value, status, group) {
         return;
     }
     var step = (pos - last + 3) % 3;
+    var n = PioneerDDJ1000.BEAT_FX_LIST.length;
     if (step === 1) {
-        engine.setValue(PioneerDDJ1000.BEAT_FX_EFFECT, "next_effect", 1);
+        PioneerDDJ1000.beatFxPos = (PioneerDDJ1000.beatFxPos + 1) % n;
     } else if (step === 2) {
-        engine.setValue(PioneerDDJ1000.BEAT_FX_EFFECT, "prev_effect", 1);
+        PioneerDDJ1000.beatFxPos = (PioneerDDJ1000.beatFxPos + n - 1) % n;
+    } else {
+        return;
     }
+    PioneerDDJ1000.beatFxLoad();
 };
 
 // Beat FX channel select (rotary, clockwise: SP MIC 3 1 2 4 MASTER). Each detent sends
@@ -1140,6 +1190,13 @@ PioneerDDJ1000.colorFxInit = function() {
         " (expected Filter=" + PioneerDDJ1000.COLOR_FX_PRESETS[PioneerDDJ1000.COLOR_FX_DEFAULT].index + ")");
     PioneerDDJ1000.colorFxApply(PioneerDDJ1000.COLOR_FX_DEFAULT);
     PioneerDDJ1000.colorFxDiagInit();
+    // Beat FX: handled by the DDJ-1000's own DSP (LOW CUT ECHO etc. on the unit display);
+    // no Mixxx mapping since 2026-11-08 (Mixxx only sends the master mix, so the built-in
+    // Beat FX work on MST only). The beatFx* functions below are kept but unused.
+    // Clear what the earlier software Beat FX left in Effect Unit 1 (state is persisted).
+    for (var e = 1; e <= 3; e++) {
+        engine.setValue("[EffectRack1_EffectUnit1_Effect" + e + "]", "enabled", 0);
+    }
 };
 
 PioneerDDJ1000.colorFxButton = function(channel, control, value, status, group) {
