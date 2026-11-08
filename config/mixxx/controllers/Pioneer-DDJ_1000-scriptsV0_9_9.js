@@ -921,15 +921,15 @@ var timeTypeCH4 = 0;
 	
 	PioneerDDJ1000.LoopScaleDividePer2CH1 = function (channel, control, value, status, group) {
 		
-		var isLoopEnabled = engine.getValue("[Channel1]","loop_enabled");
-		//var actualLoopScale = engine.getValue("[Channel1]","loop_scale");
+		// 2026-11-08: generic (group), used by all four decks
+		var isLoopEnabled = engine.getValue(group,"loop_enabled");
 		
 		if (value == 0x7F) {
 		
 			if (isLoopEnabled) {	// If Loop is already set
-				engine.setValue("[Channel1]","loop_halve",1); // Didn't work, I don't know why
+				engine.setValue(group,"loop_halve",1);
 			} else {
-				engine.setValue("[Channel1]","loop_in",1);
+				engine.setValue(group,"loop_in",1);
 			}
 		
 		}
@@ -944,7 +944,7 @@ var timeTypeCH4 = 0;
 		if (value == 0x7F) {
 		
 			if (isLoopEnabled) {	// If Loop is already set
-				engine.setValue(group,"loop_double",1);	// Didn't work, I don't know why
+				engine.setValue(group,"loop_double",1);
 			}else {
 				engine.setValue(group,"loop_out",1);
 			}
@@ -1193,19 +1193,39 @@ PioneerDDJ1000.colorFxDiagInit = function() {
 // ============================================================
 PioneerDDJ1000.PAD_STATUS_DECK = {0x97: 1, 0x99: 2, 0x9B: 3, 0x9D: 4};
 PioneerDDJ1000.PAD_FX_UNIT = "[EffectRack1_EffectUnit2]";
+// Layout = rekordbox default PAD FX1 bank (screenshot 2026-11-08):
+//   1 ROLL 1/2   2 SWEEP   3 FLANGER 16   4 V.BRAKE 3/4
+//   5 ECHO 1/4   6 ECHO 1/2   7 REVERB 50   8 ECHO 1/2 (longer tail)
+// Effects use own chain presets "PadFX ..." with FIXED values (no super1/meta links: links did
+// not move the parameters -> reverb stayed at send 0, noise at full). Index = position in
+// effects.xml <ChainPresetList> + 1 ("---" is 0).
 PioneerDDJ1000.PAD_FX1_EFFECTS = [
-    {name: "Reverb", index: 2, super1: 1.0},
-    {name: "Echoverb HP", index: 6, super1: 1.0},
-    {name: "Sweep (Filter Echo, HPF up)", index: 7, sweepFrom: 0.5, sweepTo: 1.0},
-    {name: "White Noise", index: 1, super1: 0.6},
-    {name: "Smooth Growl", index: 10, super1: 1.0},
+    {name: "Roll 1/2", roll: "0.5"},
+    {name: "Sweep", index: 17},
+    {name: "Flanger 16", index: 16},
+    {name: "V.Brake 3/4", brakeBeats: 0.75},
+    {name: "Echo 1/4", index: 12},
+    {name: "Echo 1/2", index: 13},
+    {name: "Reverb 50", index: 15},
+    {name: "Echo 1/2 long", index: 14},
 ];
 PioneerDDJ1000.padFxActive = null;   // {deck, pad, timer}
 PioneerDDJ1000.padFxSetSuper = function(v) {
     var u = PioneerDDJ1000.PAD_FX_UNIT;
-    // links only follow super1 when it changes, so nudge it once
-    engine.setValue(u, "super1", v > 0.5 ? v - 0.001 : v + 0.001);
     engine.setValue(u, "super1", v);
+    // The effects' meta knobs use soft takeover: a jump of super1 away from the preset's
+    // stored meta value (e.g. 0 -> 1) is ignored, so the linked parameters never move.
+    // Set each loaded effect's meta directly.
+    for (var e = 1; e <= 3; e++) {
+        var g = u.replace("]", "_Effect" + e + "]");
+        if (engine.getValue(g, "loaded")) { engine.setValue(g, "meta", v); }
+    }
+};
+PioneerDDJ1000.padFxEnableSlots = function() {
+    for (var e = 1; e <= 3; e++) {
+        var g = "[EffectRack1_EffectUnit2_Effect" + e + "]";
+        if (engine.getValue(g, "loaded")) { engine.setValue(g, "enabled", 1); }
+    }
 };
 PioneerDDJ1000.padFxStop = function() {
     var a = PioneerDDJ1000.padFxActive;
@@ -1229,6 +1249,9 @@ PioneerDDJ1000.padFxStart = function(deck, pad) {
     }
     engine.setValue(u, "mix", 1);
     engine.setValue(u, "enabled", 1);
+    // The slots' own enabled flags are kept per unit (not per preset) and were 0 -> silence.
+    PioneerDDJ1000.padFxEnableSlots();
+    engine.beginTimer(60, PioneerDDJ1000.padFxEnableSlots, true);
     var active = {deck: deck, pad: pad, timer: 0};
     // Diagnostics (temporary, 2026-11-08): Pad FX 1-5 were reported silent
     engine.beginTimer(300, function() {
@@ -1238,23 +1261,12 @@ PioneerDDJ1000.padFxStart = function(deck, pad) {
             " super1=" + engine.getValue(u, "super1").toFixed(2) +
             " route=" + engine.getValue(u, "group_[Channel" + deck + "]_enable") +
             " E1.loaded=" + engine.getValue("[EffectRack1_EffectUnit2_Effect1]", "loaded") +
-            " E1.enabled=" + engine.getValue("[EffectRack1_EffectUnit2_Effect1]", "enabled"));
+            " E1.enabled=" + engine.getValue("[EffectRack1_EffectUnit2_Effect1]", "enabled") +
+            " meta=" + [1, 2, 3].map(function(e) {
+                return engine.getValue("[EffectRack1_EffectUnit2_Effect" + e + "]", "meta").toFixed(2);
+            }).join("/"));
     }, true);
     PioneerDDJ1000.padFxActive = active;
-    if (fx.sweepFrom === undefined) {
-        // wait for the preset load to go through, then set the knob
-        active.timer = engine.beginTimer(80, function() {
-            active.timer = 0;
-            PioneerDDJ1000.padFxSetSuper(fx.super1);
-        }, true);
-    } else {
-        var v = fx.sweepFrom, step = (fx.sweepTo - fx.sweepFrom) / 60;   // ~2 s sweep
-        active.timer = engine.beginTimer(35, function() {
-            v = Math.min(fx.sweepTo, v + step);
-            engine.setValue(u, "super1", v);
-            if (v >= fx.sweepTo && active.timer) { engine.stopTimer(active.timer); active.timer = 0; }
-        });
-    }
 };
 PioneerDDJ1000.padFx1 = function(channel, control, value, status, group) {
     var deck = PioneerDDJ1000.PAD_STATUS_DECK[(status & 0x0F) | 0x90];
@@ -1262,20 +1274,48 @@ PioneerDDJ1000.padFx1 = function(channel, control, value, status, group) {
     var pressed = (status & 0xF0) === 0x90 && value > 0;
     var g = "[Channel" + deck + "]";
     var pad = control - 0x10;
-    if (pad < PioneerDDJ1000.PAD_FX1_EFFECTS.length) {
+    var fx = PioneerDDJ1000.PAD_FX1_EFFECTS[pad];
+    if (!fx) { return; }
+    if (fx.roll) {
+        engine.setValue(g, "beatlooproll_" + fx.roll + "_activate", pressed ? 1 : 0);
+    } else if (fx.brakeBeats) {
         if (pressed) {
-            PioneerDDJ1000.padFxStart(deck, pad);
+            // stop within ~3/4 beat; engine.brake factor 1 ~ 1 s to standstill (tune by ear)
+            var bpm = engine.getValue(g, "bpm") || 120;
+            var seconds = fx.brakeBeats * 60 / bpm;
+            engine.brake(deck, true, Math.max(0.3, 1 / seconds));
         } else {
-            var a = PioneerDDJ1000.padFxActive;
-            if (a && a.deck === deck && a.pad === pad) { PioneerDDJ1000.padFxStop(); }
+            engine.brake(deck, false);
         }
-    } else if (pad === 5) {
-        engine.setValue(g, "reverseroll", pressed ? 1 : 0);
-    } else if (pad === 6) {
-        engine.spinback(deck, pressed);
-    } else if (pad === 7) {
-        engine.brake(deck, pressed);
+    } else if (pressed) {
+        PioneerDDJ1000.padFxStart(deck, pad);
+    } else {
+        var a = PioneerDDJ1000.padFxActive;
+        if (a && a.deck === deck && a.pad === pad) { PioneerDDJ1000.padFxStop(); }
     }
+};
+
+// 4 BEAT LOOP button (9x 14), 2026-11-08: if any loop is active (also a manual IN/OUT loop
+// or another size) the button exits it; only without a loop it sets a 4-beat loop.
+PioneerDDJ1000.beatLoop4OrExit = function(channel, control, value, status, group) {
+    if (value !== 0x7F) { return; }
+    if (engine.getValue(group, "loop_enabled")) {
+        engine.setValue(group, "reloop_toggle", 1);
+    } else {
+        engine.setValue(group, "beatloop_4_activate", 1);
+    }
+};
+
+// BEAT LOOP (Shift + BEAT JUMP pad mode), 2026-11-08 – note numbers ASSUMED by analogy to
+// PAD FX2 (= PAD FX1 + 0x40): 97/99/9B/9D 60..67. Pressing toggles a beat loop of that size.
+PioneerDDJ1000.BEAT_LOOP_SIZES = ["0.25", "0.5", "1", "2", "4", "8", "16", "32"];
+PioneerDDJ1000.beatLoopPad = function(channel, control, value, status, group) {
+    var deck = PioneerDDJ1000.PAD_STATUS_DECK[(status & 0x0F) | 0x90];
+    var size = PioneerDDJ1000.BEAT_LOOP_SIZES[control - 0x60];
+    print("DDJ-1000 BeatLoop status=0x" + status.toString(16) + " note=0x" + control.toString(16) +
+        " value=" + value + " deck=" + deck + " size=" + size);
+    if (!deck || !size || (status & 0xF0) !== 0x90 || value === 0) { return; }
+    engine.setValue("[Channel" + deck + "]", "beatloop_" + size + "_toggle", 1);
 };
 
 // PAD FX2 (Shift + PAD FX1): 97 50..57 (deck 1), loop rolls 1/16 .. 8 beats while held.
