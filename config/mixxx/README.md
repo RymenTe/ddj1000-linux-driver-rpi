@@ -27,3 +27,18 @@ In the mapping (`PioneerDDJ1000Unlock`):
 - `PioneerDDJ1000.incomingData` routes SysEx to `handleSysex` (Mixxx never uses the XML `0xF0` binding for SysEx).
 
 See `docs/session-log.md` (2026-11-07) for the measurements behind this.
+
+## Skin „Pioneered (4 Deck)“ (2026-11-08)
+
+Pioneered setzt `num_decks=2`; das DDJ-1000-Mapping braucht 4 Decks. Kopie mit 4 Decks anlegen
+(Änderung als Referenz: `skins/Pioneered-4Deck.patch`):
+
+```bash
+mkdir -p ~/.mixxx/skins
+cp -a /usr/share/mixxx/skins/Pioneered ~/.mixxx/skins/Pioneered-4Deck
+sed -i -e 's#<title>Pioneered</title>#<title>Pioneered (4 Deck)</title>#' \
+       -e 's#<attribute config_key="\[Master\],num_decks">2</attribute>#<attribute config_key="[App],num_decks">4</attribute>#' \
+       ~/.mixxx/skins/Pioneered-4Deck/skin.xml
+```
+Dann in Mixxx: Preferences → Interface → Skin `Pioneered-4Deck`, Mixxx neu starten.
+Mapping-Testkonfiguration: `controllers/DDJ-1000test.midi.xml` (+ gemeinsames JS).

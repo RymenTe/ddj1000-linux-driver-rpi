@@ -1,0 +1,19 @@
+diff -ru /usr/share/mixxx/skins/Pioneered/skin.xml Pioneered-4Deck/skin.xml
+--- /usr/share/mixxx/skins/Pioneered/skin.xml	2025-09-11 20:43:01.612125168 +0100
++++ Pioneered-4Deck/skin.xml	2026-11-08 01:01:51.257399796 +0000
+@@ -1,13 +1,13 @@
+ <skin>
+ 	<manifest>
+-		<title>Pioneered</title>
++		<title>Pioneered (4 Deck)</title>
+ 		<author>Sven Boekelder</author>
+ 		<version>0.5.0</version>
+ 		<description>Pioneer inspired theme for smaller screen resolutions</description>
+ 		<language>*</language>
+ 		<license>GPL</license>
+ 		<attributes>
+-			<attribute config_key="[Master],num_decks">2</attribute>
++			<attribute config_key="[App],num_decks">4</attribute>
+ 			<attribute config_key="[Master],num_samplers">16</attribute>
+ 			<attribute persist="true" config_key="[Master],maximize_library">0</attribute>
+ 			<attribute persist="true" config_key="[Master],skin_settings">0</attribute>

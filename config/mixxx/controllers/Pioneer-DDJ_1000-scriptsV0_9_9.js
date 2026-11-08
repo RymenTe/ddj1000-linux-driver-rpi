@@ -244,6 +244,8 @@ var timeTypeCH4 = 0;
 		} else {
 			print("DDJ-1000: heartbeat disabled (session kept from ddj1000-unlock@.service)");
 		}
+		PioneerDDJ1000.colorFxInit();
+		PioneerDDJ1000.browseInit();
 		var i = 0;
 		
 		// Play & Cue
@@ -902,19 +904,19 @@ var timeTypeCH4 = 0;
 	};
 	
 	PioneerDDJ1000.LoopSetFeedbackCH1 = function (value, group, control) {
-		midi.sendShortMsg(0x90,0x14,0x7F);
+		midi.sendShortMsg(0x90,0x14,value ? 0x7F : 0x00);
 	};
 	
 	PioneerDDJ1000.LoopSetFeedbackCH2 = function (value, group, control) {
-		midi.sendShortMsg(0x91,0x14,0x7F);
+		midi.sendShortMsg(0x91,0x14,value ? 0x7F : 0x00);
 	};
 	
 	PioneerDDJ1000.LoopSetFeedbackCH3 = function (value, group, control) {
-		midi.sendShortMsg(0x92,0x14,0x7F);
+		midi.sendShortMsg(0x92,0x14,value ? 0x7F : 0x00);
 	};
 	
 	PioneerDDJ1000.LoopSetFeedbackCH4 = function (value, group, control) {
-		midi.sendShortMsg(0x93,0x14,0x7F);
+		midi.sendShortMsg(0x93,0x14,value ? 0x7F : 0x00);
 	};
 	
 	PioneerDDJ1000.LoopScaleDividePer2CH1 = function (channel, control, value, status, group) {
@@ -1046,4 +1048,308 @@ PioneerDDJ1000.beatFxChannelSelect = function(channel, control, value, status, g
         engine.setValue(PioneerDDJ1000.BEAT_FX_UNIT, "group_" + all[i] + "_enable",
             targets.indexOf(all[i]) >= 0 ? 1 : 0);
     }
+    // Diagnostics (temporary, 2026-11-08)
+    var u = PioneerDDJ1000.BEAT_FX_UNIT, st = "DDJ-1000 BeatFX route 0x" + control.toString(16) + ":";
+    for (var j = 0; j < 6; j++) { st += " " + all[j] + "=" + engine.getValue(u, "group_" + all[j] + "_enable"); }
+    st += " unit.enabled=" + engine.getValue(u, "enabled") + " unit.mix=" + engine.getValue(u, "mix").toFixed(2) +
+        " fx.enabled=" + engine.getValue(PioneerDDJ1000.BEAT_FX_EFFECT, "enabled") +
+        " fx.loaded=" + engine.getValue(PioneerDDJ1000.BEAT_FX_EFFECT, "loaded");
+    print(st);
+};
+
+// ============================================================
+// Sound Color FX (ddj1000-linux-driver, 2026-11-08)
+// Buttons, measured with aseqdump: 96 00=DUB ECHO 01=PITCH 02=NOISE 03=FILTER.
+// The DDJ does the radio selection itself: a press sends note-off (0x86) for the previously
+// lit button, then note-on (0x96) for the new one; pressing the lit button only sends note-off.
+// Selection loads the chain preset on all four QuickEffect chains; the COLOR knobs (super1,
+// XML) then drive it. Nothing selected -> chains disabled, knobs without effect (Pioneer).
+// Indices = 0-based position in Preferences > Effects > Quick Effect chain presets
+// (2.5.3: EffectChainPresetManager::quickEffectPresetAtIndex). Reordering that list
+// changes them; colorFxInit prints the index of the preset loaded at startup.
+// ============================================================
+PioneerDDJ1000.COLOR_FX_PRESETS = {
+    // Index 0 is the empty preset ("---"); the list from effects.xml starts at 1.
+    // Verified 2026-11-08 by parameter fingerprints in mixxx.log: 3=Loudness, 6=Echoverb HP, 14=Echo.
+    0x00: {name: "Filter Echo", index: 7},   // DUB ECHO
+    // 0x01 PITCH: intentionally unassigned (Pitch Shift destabilised audio, 2026-11-08) -> Color FX off
+    0x02: {name: "White Noise", index: 1, bipolar: true},   // NOISE: center silent, both sides noise
+    0x03: {name: "Filter", index: 15},       // FILTER
+};
+PioneerDDJ1000.COLOR_FX_DEFAULT = 0x03;
+PioneerDDJ1000.colorFxSelected = -1;
+
+PioneerDDJ1000.quickFxGroup = function(deck) {
+    return "[QuickEffectRack1_[Channel" + deck + "]]";
+};
+
+PioneerDDJ1000.colorFxApply = function(button) {
+    var preset = PioneerDDJ1000.COLOR_FX_PRESETS[button];
+    PioneerDDJ1000.colorFxSelected = preset ? button : -1;
+    var loading = false;
+    for (var deck = 1; deck <= 4; deck++) {
+        var g = PioneerDDJ1000.quickFxGroup(deck);
+        if (preset) {
+            if (engine.getValue(g, "loaded_chain_preset") !== preset.index) {
+                engine.setValue(g, "loaded_chain_preset", preset.index);
+                loading = true;
+            }
+            engine.setValue(g, "enabled", 1);
+        } else {
+            engine.setValue(g, "enabled", 0);
+        }
+    }
+    // A freshly loaded preset starts from its stored parameter values; its links only follow
+    // super1 once super1 changes. Re-send the knob position after the load has gone through.
+    if (loading) {
+        engine.beginTimer(150, function() {
+            for (var d = 1; d <= 4; d++) { PioneerDDJ1000.colorKnobApply(d, true); }
+        }, true);
+    } else {
+        for (var d2 = 1; d2 <= 4; d2++) { PioneerDDJ1000.colorKnobApply(d2, false); }
+    }
+};
+
+// COLOR knobs CH1..4: B6 17..1A (MSB) followed by B6 37..3A (LSB), handled here instead of
+// a direct super1 mapping so each FX can get Pioneer behaviour (12 o'clock = off).
+PioneerDDJ1000.colorKnobMsb = [0, 64, 64, 64, 64];
+PioneerDDJ1000.colorKnobValue = [0.5, 0.5, 0.5, 0.5, 0.5];
+PioneerDDJ1000.colorKnob = function(channel, control, value, status, group) {
+    var deck = (control & 0x1F) - 0x16;
+    if (deck < 1 || deck > 4) { return; }
+    if (control < 0x20) {
+        PioneerDDJ1000.colorKnobMsb[deck] = value;
+        return;
+    }
+    PioneerDDJ1000.colorKnobValue[deck] = (PioneerDDJ1000.colorKnobMsb[deck] * 128 + value) / 16383;
+    PioneerDDJ1000.colorKnobApply(deck, false);
+};
+PioneerDDJ1000.colorKnobApply = function(deck, force) {
+    var v = PioneerDDJ1000.colorKnobValue[deck];
+    if (Math.abs(v - 0.5) < 0.02) { v = 0.5; }   // detent dead zone
+    var preset = PioneerDDJ1000.COLOR_FX_PRESETS[PioneerDDJ1000.colorFxSelected];
+    if (preset && preset.bipolar) { v = Math.abs(v - 0.5) * 2; }
+    var g = PioneerDDJ1000.quickFxGroup(deck);
+    if (force) { engine.setValue(g, "super1", v > 0.5 ? v - 0.001 : v + 0.001); }
+    engine.setValue(g, "super1", v);
+};
+
+PioneerDDJ1000.colorFxInit = function() {
+    print("DDJ-1000 ColorFX: CH1 loaded_chain_preset=" +
+        engine.getValue(PioneerDDJ1000.quickFxGroup(1), "loaded_chain_preset") +
+        " (expected Filter=" + PioneerDDJ1000.COLOR_FX_PRESETS[PioneerDDJ1000.COLOR_FX_DEFAULT].index + ")");
+    PioneerDDJ1000.colorFxApply(PioneerDDJ1000.COLOR_FX_DEFAULT);
+    PioneerDDJ1000.colorFxDiagInit();
+};
+
+PioneerDDJ1000.colorFxButton = function(channel, control, value, status, group) {
+    var noteOn = (status & 0xF0) === 0x90 && value > 0;
+    if (noteOn) {
+        PioneerDDJ1000.colorFxApply(control);
+        engine.beginTimer(500, function() { PioneerDDJ1000.colorFxDump("select " + control); }, true);
+    } else if (control === PioneerDDJ1000.colorFxSelected) {
+        // Either deselected (lit button pressed again) or replaced; a following note-on re-applies.
+        PioneerDDJ1000.colorFxApply(-1);
+    }
+};
+
+// --- Color FX diagnostics (temporary, 2026-11-08): writes the CH1 QuickEffect state to
+// mixxx.log after each selection and when the COLOR knob reaches an end or the center.
+PioneerDDJ1000.colorFxDump = function(reason) {
+    var g = PioneerDDJ1000.quickFxGroup(1);
+    var s = "DDJ-1000 ColorFX dump (" + reason + "): preset=" + engine.getValue(g, "loaded_chain_preset") +
+        " enabled=" + engine.getValue(g, "enabled") + " super1=" + engine.getValue(g, "super1").toFixed(3) +
+        " mix=" + engine.getValue(g, "mix");
+    for (var e = 1; e <= 3; e++) {
+        var eg = "[QuickEffectRack1_[Channel1]_Effect" + e + "]";
+        if (!engine.getValue(eg, "loaded")) { continue; }
+        s += " | E" + e + " on=" + engine.getValue(eg, "enabled") + " meta=" + engine.getValue(eg, "meta").toFixed(3);
+        var n = engine.getValue(eg, "num_parameters");
+        for (var p = 1; p <= n; p++) {
+            s += " p" + p + "=" + engine.getValue(eg, "parameter" + p).toFixed(3);
+        }
+    }
+    print(s);
+};
+PioneerDDJ1000.colorFxKnobZone = -1;
+PioneerDDJ1000.colorFxKnobWatch = function(value) {
+    var zone = value < 0.03 ? 0 : (value > 0.97 ? 2 : (Math.abs(value - 0.5) < 0.02 ? 1 : -1));
+    if (zone >= 0 && zone !== PioneerDDJ1000.colorFxKnobZone) {
+        PioneerDDJ1000.colorFxDump(["knob LOW", "knob CENTER", "knob HIGH"][zone]);
+    }
+    if (zone >= 0) { PioneerDDJ1000.colorFxKnobZone = zone; }
+};
+PioneerDDJ1000.colorFxDiagInit = function() {
+    engine.makeConnection(PioneerDDJ1000.quickFxGroup(1), "super1", PioneerDDJ1000.colorFxKnobWatch);
+};
+
+// ============================================================
+// PAD FX1 (ddj1000-linux-driver, 2026-11-08), measured with aseqdump:
+// pads 1..8 = 97 10..17 (deck 1); pad status per deck 97/99/9B/9D (note-off 87/89/8B/8D).
+// Everything acts only while the pad is held.
+//   1-5: effect via [EffectRack1_EffectUnit2], routed to the pad's deck only
+//   6: censor (reverse roll)   7: spinback   8: brake
+// Chain preset indices: 0-based in Preferences > Effects > chain presets, index 0 = "---".
+// ============================================================
+PioneerDDJ1000.PAD_STATUS_DECK = {0x97: 1, 0x99: 2, 0x9B: 3, 0x9D: 4};
+PioneerDDJ1000.PAD_FX_UNIT = "[EffectRack1_EffectUnit2]";
+PioneerDDJ1000.PAD_FX1_EFFECTS = [
+    {name: "Reverb", index: 2, super1: 1.0},
+    {name: "Echoverb HP", index: 6, super1: 1.0},
+    {name: "Sweep (Filter Echo, HPF up)", index: 7, sweepFrom: 0.5, sweepTo: 1.0},
+    {name: "White Noise", index: 1, super1: 0.6},
+    {name: "Smooth Growl", index: 10, super1: 1.0},
+];
+PioneerDDJ1000.padFxActive = null;   // {deck, pad, timer}
+PioneerDDJ1000.padFxSetSuper = function(v) {
+    var u = PioneerDDJ1000.PAD_FX_UNIT;
+    // links only follow super1 when it changes, so nudge it once
+    engine.setValue(u, "super1", v > 0.5 ? v - 0.001 : v + 0.001);
+    engine.setValue(u, "super1", v);
+};
+PioneerDDJ1000.padFxStop = function() {
+    var a = PioneerDDJ1000.padFxActive;
+    if (!a) { return; }
+    if (a.timer) { engine.stopTimer(a.timer); }
+    var u = PioneerDDJ1000.PAD_FX_UNIT;
+    engine.setValue(u, "enabled", 0);
+    engine.setValue(u, "group_[Channel" + a.deck + "]_enable", 0);
+    PioneerDDJ1000.padFxActive = null;
+};
+PioneerDDJ1000.padFxStart = function(deck, pad) {
+    PioneerDDJ1000.padFxStop();
+    var fx = PioneerDDJ1000.PAD_FX1_EFFECTS[pad];
+    var u = PioneerDDJ1000.PAD_FX_UNIT;
+    for (var d = 1; d <= 4; d++) {
+        engine.setValue(u, "group_[Channel" + d + "]_enable", d === deck ? 1 : 0);
+    }
+    engine.setValue(u, "group_[Master]_enable", 0);
+    if (engine.getValue(u, "loaded_chain_preset") !== fx.index) {
+        engine.setValue(u, "loaded_chain_preset", fx.index);
+    }
+    engine.setValue(u, "mix", 1);
+    engine.setValue(u, "enabled", 1);
+    var active = {deck: deck, pad: pad, timer: 0};
+    // Diagnostics (temporary, 2026-11-08): Pad FX 1-5 were reported silent
+    engine.beginTimer(300, function() {
+        print("DDJ-1000 PadFX deck " + deck + " pad " + (pad + 1) + " (" + fx.name + "): preset=" +
+            engine.getValue(u, "loaded_chain_preset") + " want=" + fx.index +
+            " enabled=" + engine.getValue(u, "enabled") + " mix=" + engine.getValue(u, "mix") +
+            " super1=" + engine.getValue(u, "super1").toFixed(2) +
+            " route=" + engine.getValue(u, "group_[Channel" + deck + "]_enable") +
+            " E1.loaded=" + engine.getValue("[EffectRack1_EffectUnit2_Effect1]", "loaded") +
+            " E1.enabled=" + engine.getValue("[EffectRack1_EffectUnit2_Effect1]", "enabled"));
+    }, true);
+    PioneerDDJ1000.padFxActive = active;
+    if (fx.sweepFrom === undefined) {
+        // wait for the preset load to go through, then set the knob
+        active.timer = engine.beginTimer(80, function() {
+            active.timer = 0;
+            PioneerDDJ1000.padFxSetSuper(fx.super1);
+        }, true);
+    } else {
+        var v = fx.sweepFrom, step = (fx.sweepTo - fx.sweepFrom) / 60;   // ~2 s sweep
+        active.timer = engine.beginTimer(35, function() {
+            v = Math.min(fx.sweepTo, v + step);
+            engine.setValue(u, "super1", v);
+            if (v >= fx.sweepTo && active.timer) { engine.stopTimer(active.timer); active.timer = 0; }
+        });
+    }
+};
+PioneerDDJ1000.padFx1 = function(channel, control, value, status, group) {
+    var deck = PioneerDDJ1000.PAD_STATUS_DECK[(status & 0x0F) | 0x90];
+    if (!deck) { return; }
+    var pressed = (status & 0xF0) === 0x90 && value > 0;
+    var g = "[Channel" + deck + "]";
+    var pad = control - 0x10;
+    if (pad < PioneerDDJ1000.PAD_FX1_EFFECTS.length) {
+        if (pressed) {
+            PioneerDDJ1000.padFxStart(deck, pad);
+        } else {
+            var a = PioneerDDJ1000.padFxActive;
+            if (a && a.deck === deck && a.pad === pad) { PioneerDDJ1000.padFxStop(); }
+        }
+    } else if (pad === 5) {
+        engine.setValue(g, "reverseroll", pressed ? 1 : 0);
+    } else if (pad === 6) {
+        engine.spinback(deck, pressed);
+    } else if (pad === 7) {
+        engine.brake(deck, pressed);
+    }
+};
+
+// PAD FX2 (Shift + PAD FX1): 97 50..57 (deck 1), loop rolls 1/16 .. 8 beats while held.
+PioneerDDJ1000.PAD_FX2_ROLLS = ["0.0625", "0.125", "0.25", "0.5", "1", "2", "4", "8"];
+PioneerDDJ1000.padFx2 = function(channel, control, value, status, group) {
+    var deck = PioneerDDJ1000.PAD_STATUS_DECK[(status & 0x0F) | 0x90];
+    var size = PioneerDDJ1000.PAD_FX2_ROLLS[control - 0x50];
+    if (!deck || !size) { return; }
+    var pressed = (status & 0xF0) === 0x90 && value > 0;
+    engine.setValue("[Channel" + deck + "]", "beatlooproll_" + size + "_activate", pressed ? 1 : 0);
+};
+
+// Shift + BEAT SYNC (90..93 5C, measured 2026-11-08): toggle this deck as explicit sync leader.
+PioneerDDJ1000.syncLeader = function(channel, control, value, status, group) {
+    if (value !== 0x7F) { return; }
+    engine.setValue(group, "sync_leader", engine.getValue(group, "sync_leader") >= 2 ? 0 : 2);
+};
+
+// ============================================================
+// Browse (Pioneered skin, 2026-11-08). The skin switches its tabs via [Tab],current
+// (0 = Overview, 1 = Browse, 2 = Samples). Library focus via [Library],focused_widget
+// (2 = sidebar/folder tree, 3 = track list).
+//   VIEW            : Overview <-> Browse
+//   BACK            : folder tree <-> track list
+//   BROWSE turn     : opens Browse if needed, then scrolls the focused list
+//   BROWSE push     : tree: open/close folder (playlist -> its tracks); track list: LOAD
+// ============================================================
+// Pioneered shows EITHER the track list OR the folder tree, switched by [Sidebar],sidebar_visible.
+// browseInit makes that follow the library focus, so whatever has the focus is also visible
+// (also when GoToItem on a playlist moves the focus into its tracks).
+PioneerDDJ1000.browseInit = function() {
+    engine.makeConnection("[Library]", "focused_widget", function(w) {
+        if (w === 2 || w === 3) {
+            engine.setValue("[Sidebar]", "sidebar_visible", w === 2 ? 1 : 0);
+        }
+    });
+};
+PioneerDDJ1000.TAB_OVERVIEW = 0;
+PioneerDDJ1000.TAB_BROWSE = 1;
+PioneerDDJ1000.showBrowse = function() {
+    if (engine.getValue("[Tab]", "current") !== PioneerDDJ1000.TAB_BROWSE) {
+        engine.setValue("[Tab]", "current", PioneerDDJ1000.TAB_BROWSE);
+        return true;
+    }
+    return false;
+};
+PioneerDDJ1000.browseView = function(channel, control, value, status, group) {
+    if (value !== 0x7F) { return; }
+    var browsing = engine.getValue("[Tab]", "current") === PioneerDDJ1000.TAB_BROWSE;
+    engine.setValue("[Tab]", "current", browsing ? PioneerDDJ1000.TAB_OVERVIEW : PioneerDDJ1000.TAB_BROWSE);
+};
+PioneerDDJ1000.browseBack = function(channel, control, value, status, group) {
+    if (value !== 0x7F) { return; }
+    PioneerDDJ1000.showBrowse();
+    var inTracks = engine.getValue("[Library]", "focused_widget") === 3;
+    engine.setValue("[Library]", "focused_widget", inTracks ? 2 : 3);
+};
+PioneerDDJ1000.browseTurn = function(channel, control, value, status, group) {
+    if (PioneerDDJ1000.showBrowse()) { return; }   // first detent only opens Browse
+    var w = engine.getValue("[Library]", "focused_widget");
+    if (w !== 2 && w !== 3) { engine.setValue("[Library]", "focused_widget", 3); }
+    engine.setValue("[Library]", "MoveVertical", value < 64 ? value : value - 128);
+};
+// BROWSE push = LOAD (96 46..49 = deck 1..4, measured 2026-11-08), rekordbox style:
+// in the folder tree it opens/closes the folder (a playlist/crate jumps into its tracks),
+// in the track list it loads the selected track onto that deck.
+PioneerDDJ1000.browsePush = function(channel, control, value, status, group) {
+    if (value !== 0x7F) { return; }
+    var deck = control - 0x45;
+    if (deck < 1 || deck > 4) { return; }
+    if (engine.getValue("[Tab]", "current") === PioneerDDJ1000.TAB_BROWSE &&
+            engine.getValue("[Library]", "focused_widget") === 2) {
+        engine.setValue("[Library]", "GoToItem", 1);
+        return;
+    }
+    engine.setValue("[Channel" + deck + "]", "LoadSelectedTrack", 1);
 };

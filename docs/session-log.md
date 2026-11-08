@@ -250,3 +250,38 @@ kein libusb/Silence-Stream/Rebind; Protokoll-Logik importiert aus `ddj1000-unloc
   FX RELEASE = Beat FX ON/OFF (`94 47`, schon gemappt). Beat Jump sitzt im Pad-Modus (Hotcue-Pads) → separat messen.
 - Push: Pi 4 → Fork `RymenTe/ddj1000-linux-driver-rpi` Branch `rpi4` (Merge statt Force, Fork-Commits bleiben);
   beide rpi-Patches (6.12/6.18) ebenfalls auf 12 ch Capture. Pi 5 später (RP1 statt VL805, ungetestet).
+
+## 2026-11-08 (00:00–01:20) – Mapping-Ausbau in `DDJ-1000test.midi.xml`, Pioneered-Skin
+
+Arbeitsweise: MIDI parallel zu Mixxx per `aseqdump -p 20:0` (ALSA-Seq, kein Rawmidi-FD) mitgeschnitten
+(`~/build-logs/midi-capture-20261108*.log`); Mixxx-Verhalten per `print()`-Diagnose in `~/.mixxx/mixxx.log`.
+Alle Änderungen nur in der Testkonfiguration `DDJ-1000test.midi.xml` (+ gemeinsames JS). Backups
+`~/.mixxx/controllers/*.backup-20261108-{0003,0018,0030,0050,0054,0116}`, Snapshot
+`~/module-backups/20261108-0116-mapping-session/`.
+
+Gemessen (neu):
+- Sound Color FX `96 00–03` (DUB ECHO, PITCH, NOISE, FILTER); DDJ macht die Radio-Auswahl selbst:
+  Druck = `86 alt` (echter Note-off) + `96 neu`; leuchtende Taste erneut = nur `86`.
+- Beat FX CH-Wahl `94 10–16` je Raste `84 alt` + `94 neu`; Status-Dump beim Mapping-Laden meldet Stellung.
+- Pads: PAD FX1 `97 10–17`, PAD FX2 `97 50–57`, Beat Jump `97 20–27` (PAGE ▶: `28–2F`), Sampler `97 30–37`.
+  Pad-Modus-Tasten `90 1B/1E/20/22/6B` (DDJ-intern, kein Mapping nötig).
+- Crossfader `B6 1F/3F` (14 bit). Shift+BEAT SYNC `90/91 5C`. Browse: Push = LOAD `96 46–49`,
+  Shift+Push `96 6D`, BACK `96 65`, Shift+BACK `96 66`, VIEW `96 7A`, Shift+VIEW `96 68`.
+- Unbelegt gesehen: `B6 08/09/0C/0D` (Kopfhörer/Sampler-Regler?), `94 2B/2C/4A/4B/66/6B`, `90 16/17/40/5F`, `96 63`.
+
+Ursachen / Fixes:
+- Quick-Effect- **und** normale Chain-Preset-Listen haben bei Index 0 das leere Preset „---“ → Indizes =
+  Position in `effects.xml` + 1 (per Parameter-Fingerprint bestätigt: 3=Loudness, 6=Echoverb HP, 14=Echo).
+- Loop-LED blieb an: `LoopSetFeedbackCH1–4` sendete immer `0x7F`.
+- Pioneered-Skin setzt `num_decks=2` → Deck 3/4 fehlen → Output-Warnung, `init` bricht bei `[Channel3] VuMeter` ab
+  und das Script ist danach gestört („Invalid script function colorKnob“). Fix: Skin-Kopie
+  `~/.mixxx/skins/Pioneered-4Deck` mit `[App],num_decks=4` (Patch im Repo: `config/mixxx/skins/`).
+- Pioneered zeigt Track-Liste **oder** Ordnerbaum (`[Sidebar],sidebar_visible`) → BACK fokussierte einen
+  unsichtbaren Baum. Fix (ungetestet): `sidebar_visible` folgt `[Library],focused_widget`.
+
+Mapping-Stand (User: „funktioniert jetzt alles relativ fein“): Pitch-Richtung Pioneer (oben −), 4-Beat-Loop
+CH1–4 + LED, Beat Jump ¼/½/1/2 (Seite 2: 4/8/16/32) alle Decks, Color FX Dub Echo/Noise/Filter (Pitch entfernt –
+Pitch Shift destabilisierte Audio), Color-Regler per Script (12 Uhr = aus), PAD FX1 6–8 Censor/Spinback/Brake,
+PAD FX2 Loop-Roll 1/16–8, Crossfader, Shift+Sync = Sync-Leader, VIEW/BACK/Push-Browse.
+
+Offen → siehe `docs/BRIEFING-next-session.md`.
