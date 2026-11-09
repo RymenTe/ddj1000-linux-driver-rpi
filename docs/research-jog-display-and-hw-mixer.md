@@ -59,9 +59,13 @@ Folgen für uns:
 | Jog-Ring-LED        | `9n 5B hh`                      | 0x00 aus, 0x01 weiß |
 | Infos zeigen/verbergen | `9n 5D hh`                   | 0x00 zeigen, 0x7F verbergen |
 
-Status im Script `Pioneer-DDJ_1000-scriptsV0_9_9.js`: Zeit (`42/43/44`), Position (`Bn 14`), BPM (`Bn 15`),
-Ring (`5B`), Anzeige (`5D`) werden gesendet. **Noch nicht:** Tempo `Bn 16/36`, Cue-Marker `Bn 17/37`,
-Key `49/4A`, Sync `59/5A` → schnelle Verbesserungen ohne Reverse Engineering.
+Status im Script `Pioneer-DDJ_1000-scriptsV0_9_9.js` (seit 2026-11-09): Zeit (`42/43/44`), Position (`Bn 14`),
+BPM (`Bn 15`), Tempo (`Bn 16`, jetzt aus `bpm/file_bpm`, negative Werte vorher falsch), Cue-Marker (`Bn 17`,
+Main-Cue), Key/Key-Variation (`49/4A`, aus `key`/`pitch_adjust`), Sync Master/State (`59/5A`), Ring (`5B`),
+Anzeige (`5D`). Tempo-Kodierung angenommen: 1000 = 0,0 %, 0,1-%-Schritte (Spezifikation nennt nur Min/Max).
+Key-Tabelle (*3, nur als Bild im PDF): `00` = ---, dann je Dur + parallele Moll aufsteigend:
+`01` C, `02` Am, `03` Db, `04` Bbm, `05` D, `06` Bm, `07` Eb, `08` Cm, `09` E, `0A` Dbm, `0B` F, `0C` Dm,
+`0D` F#, `0E` Ebm, `0F` G, `10` Em, `11` Ab, `12` Fm, `13` A, `14` F#m, `15` Bb, `16` Gm, `17` B, `18` Abm.
 Undokumentiert laut Wiki: "PC APP Connect" = Kanal 16, Note A-1 → DDJ meldet Fader-/Reglerstellungen.
 
 ### HID-Modus (Waveform, Cuescope, Cover, Tempo-Bereich)
