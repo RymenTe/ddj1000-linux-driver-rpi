@@ -1,0 +1,24 @@
+[Unit]
+Description=DDJ-1000 bridge on /dev/snd/%I (unlock, heartbeat, MIDI for Mixxx, jog displays)
+Documentation=file://@LIBDIR@/docs/bridge.md
+# Started by udev (92-ddj1000-bridge.rules) when the DDJ-1000 rawmidi node appears, stopped on unplug.
+BindsTo=dev-snd-%i.device
+After=dev-snd-%i.device systemd-modules-load.service
+
+[Service]
+Type=simple
+User=@USER@
+Group=audio
+SupplementaryGroups=plugdev
+# snd-virmidi provides the "VirMIDI 7-0" port Mixxx uses (options in /etc/modprobe.d/ddj1000-virmidi.conf)
+ExecStartPre=+/sbin/modprobe snd-virmidi
+RuntimeDirectory=ddj1000
+RuntimeDirectoryMode=0755
+RuntimeDirectoryPreserve=no
+ExecStart=/usr/bin/python3 -I @LIBDIR@/scripts/runtime/ddj1000-bridge.py --midi-port %I --driver-read --state-file /run/ddj1000/unlocked --stats-interval-s 300
+Restart=on-failure
+RestartSec=5
+Nice=-5
+
+[Install]
+# no [Install] target needed: udev pulls the instance in via SYSTEMD_WANTS

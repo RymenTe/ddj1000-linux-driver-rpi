@@ -46,6 +46,10 @@ is_raspberry_pi() {
 # "system": unlock runs as a root system service, no desktop sink (headless Pi,
 #           Mixxx on plain ALSA). "user": original desktop flow with pactl sink.
 service_mode="${DDJ1000_SERVICE_MODE:-}"
+# "bridge" (default): the DDJ is unlocked by ddj1000-bridge@.service (install-ddj1000-bridge.sh), the
+#           permanent unlock services must stay off (they would hold the rawmidi port).
+# "keepalive": old behaviour, enable ddj1000-unlock.service.
+unlock_mode="${DDJ1000_UNLOCK_MODE:-bridge}"
 if [[ -z "$service_mode" ]]; then
     if is_raspberry_pi; then service_mode="system"; else service_mode="user"; fi
 fi
@@ -105,13 +109,17 @@ enable_service() {
     if [[ "$service_mode" == "system" ]]; then
         run_privileged systemctl daemon-reload
         run_privileged systemctl enable --now ddj1000-audio-rebind.path || true
-        run_privileged systemctl enable --now ddj1000-unlock.service || true
+        if [[ "$unlock_mode" == "keepalive" ]]; then
+            run_privileged systemctl enable --now ddj1000-unlock.service || true
+        fi
         return 0
     fi
 
     systemctl --user daemon-reload
     systemctl --user enable --now ddj1000-host-stack.service || true
-    systemctl --user enable --now ddj1000-unlock.service || true
+    if [[ "$unlock_mode" == "keepalive" ]]; then
+        systemctl --user enable --now ddj1000-unlock.service || true
+    fi
     run_privileged systemctl daemon-reload
     run_privileged systemctl enable --now ddj1000-audio-rebind.path || true
 }

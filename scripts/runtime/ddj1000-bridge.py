@@ -25,6 +25,7 @@ Step 2a: jog displays via HID from deck-state SysEx sent by the Mixxx mapping
 import argparse
 import importlib.util
 import os
+import re
 import select
 import signal
 import sys
@@ -119,6 +120,8 @@ class Bridge:
         self.vfd = None
         self.ack_at = None
         self.handshake_at = -1e9
+        self.ready_at = time.monotonic()   # last 11 02 (or start) - for the LOCKED recovery
+        self.hb_pause_until = 0.0
         self.heartbeats = 0
         self.stats = {"ddj_to_mixxx": 0, "mixxx_to_ddj": 0, "dropped_from_mixxx": 0, "coalesced": 0,
                       "max_backlog": 0, "unlocks": 0}
@@ -161,6 +164,16 @@ class Bridge:
         next_hb = 0.0
         while not self.stop.is_set():
             now = time.monotonic()
+            # LOCKED recovery: after a fast restart the DDJ may keep the old session and never send 11 02.
+            # Pausing the heartbeat lets that session end; the next heartbeat then starts a new one.
+            if (self.ack_at is None and self.args.relock_after_s > 0
+                    and now - self.ready_at > self.args.relock_after_s and now >= self.hb_pause_until):
+                self.hb_pause_until = now + self.args.relock_pause_s
+                self.ready_at = self.hb_pause_until
+                self.log(f"LOCKED without 11 02 for {self.args.relock_after_s:.0f} s -> heartbeat paused "
+                         f"{self.args.relock_pause_s:.0f} s to force a new session")
+            if now < self.hb_pause_until:
+                next_hb = self.hb_pause_until
             if now >= next_hb:
                 self.write(p.KEEPALIVE_MESSAGE)
                 self.heartbeats += 1
@@ -195,9 +208,11 @@ class Bridge:
     # --- DDJ -> bridge / Mixxx
     def handle_ddj_message(self, msg):
         if msg == p.READY_MESSAGE:
+            self.ready_at = time.monotonic()
             if self.ack_at is not None:
                 self.log("RX 11 02 ready although unlocked -> session lost, unlocking again")
                 self.ack_at = None
+                self.set_state_file(False)
             if time.monotonic() - self.handshake_at >= self.args.handshake_cooldown_s:
                 for prelude in p.PRELUDE_MESSAGES:
                     self.write(prelude)
@@ -217,6 +232,7 @@ class Bridge:
             if self.display is not None:
                 self.display.uploaded.clear()   # new session: upload tracks again
             self.log("RX 15 02 ACK -> UNLOCKED")
+            self.set_state_file(True)
             for deck in range(4):
                 self.set_pad_mode(deck, 0x1B)
             self.log("pad mode HOT CUE set on deck 1-4")
@@ -227,6 +243,20 @@ class Bridge:
             if self.args.log_pad_mode:
                 self.log(f"pad mode deck {(msg[0] & 0x0F) + 1} -> 0x{msg[1]:02X}")
         self.to_mixxx(msg)
+
+    def set_state_file(self, unlocked):
+        """--state-file exists while the DDJ is unlocked (mixxx-after-ddj1000.sh waits for it)."""
+        if not self.args.state_file:
+            return
+        path = Path(self.args.state_file)
+        try:
+            if unlocked:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(f"{time.time():.0f} bridge\n")
+            else:
+                path.unlink(missing_ok=True)
+        except OSError as exc:
+            self.log(f"WARN state file {path}: {exc}")
 
     def to_mixxx(self, msg):
         view = memoryview(msg)
@@ -244,6 +274,9 @@ class Bridge:
     def run(self):
         a = self.args
         port = a.midi_port or ut.detect_midi_port()
+        m = re.fullmatch(r"(?:/dev/snd/)?midiC(\d+)D(\d+)", port)
+        if m:   # udev passes the kernel name (midiC3D0)
+            port = f"hw:{m.group(1)},{m.group(2)},0"
         if not port:
             self.log("No DDJ-1000 MIDI port found (amidi -l)")
             return 2
@@ -311,6 +344,7 @@ class Bridge:
             writer.join(timeout=1.0)
             os.close(self.vfd)
             os.close(self.fd)
+            self.set_state_file(False)
             self.log(f"closed; heartbeats={self.heartbeats} {self.stats}")
         return rc
 
@@ -328,7 +362,12 @@ def find_card(card_id):
 
 def parse_args():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--midi-port", default="", help="DDJ rawmidi port, e.g. hw:3,0,0 (default: amidi -l)")
+    ap.add_argument("--midi-port", default="",
+                    help="DDJ rawmidi port, e.g. hw:3,0,0 or midiC3D0 (udev %%k); default: amidi -l")
+    ap.add_argument("--state-file", default="", help="created while unlocked, e.g. /run/ddj1000/unlocked")
+    ap.add_argument("--relock-after-s", type=float, default=6.0,
+                    help="LOCKED and no 11 02 for this long -> pause the heartbeat (0 = off)")
+    ap.add_argument("--relock-pause-s", type=float, default=3.0)
     ap.add_argument("--virmidi-id", default="DDJBridge", help="ALSA card id of the snd-virmidi card for Mixxx")
     ap.add_argument("--heartbeat-ms", type=float, default=200.0)
     ap.add_argument("--handshake-cooldown-s", type=float, default=2.0)
