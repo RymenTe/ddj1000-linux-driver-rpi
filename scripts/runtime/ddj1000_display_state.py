@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Deck state from Mixxx -> DDJ-1000 jog displays (HID), used by ddj1000-bridge.py.
 
 The Mixxx mapping sends one SysEx per deck about 20x/s (never forwarded to the DDJ):

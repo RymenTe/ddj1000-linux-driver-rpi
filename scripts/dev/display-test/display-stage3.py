@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # usage: display-stage3.py <hw:X,0,0> <hidraw> <dump.txt> <hold_s> [--deck 1|2] [--no-init] [--hb-stop-after-ack S]
 #   --deck 2: replay deck-2 upload (right display); --no-init: skip display-init SysEx;
 #   --hb-stop-after-ack S: stop heartbeat S seconds after the ACK (default: keep running)

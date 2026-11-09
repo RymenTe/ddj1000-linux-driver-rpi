@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys, struct, collections
 f=open(sys.argv[1],'rb').read(); off=0; t0=None; agg=collections.defaultdict(lambda:[0,0,set()])
 ex={}

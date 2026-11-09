@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys, struct, collections
 path=sys.argv[1]
 f=open(path,'rb').read()

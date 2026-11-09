@@ -81,7 +81,7 @@ Undokumentiert laut Wiki: "PC APP Connect" = Kanal 16, Note A-1 → DDJ meldet F
 ### Erster Windows-Mitschnitt (rekordbox, HID-Modus) – Auswertung 2026-11-08
 
 Datei auf dem Pi (nicht im Repo, 48 MB): `~/ddj1000-captures/windows-rekordbox-20260505/DDJ1000_laenger.pcapng`
-(SHA-256 `f37027c5…1a49428`, USBPcap, ~30 s). Analyse ohne tshark mit `scripts/dev/analysis/usbpcap-*.py`
+(SHA-256 `f37027c5…1a49428`, USBPcap, ~30 s). Analyse ohne tshark mit den Skripten `usbpcap-*.py` in `scripts/dev/analysis/`
 (`python3 -I <skript> <datei>`; der DDJ ist dort Gerät 6, ggf. im Skript anpassen).
 
 - Gerät 6 = DDJ-1000: ISO EP 0x01 (792/810 B) und EP 0x82 (3168/3204 B) wie bekannt; Bulk EP 0x04 (MIDI-OUT,

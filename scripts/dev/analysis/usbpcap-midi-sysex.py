@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys, struct, collections
 # Decode USB-MIDI (EP 0x04 OUT / 0x85 IN) of device DEV from a USBPcap pcapng; print SysEx messages with time.
 f=open(sys.argv[1],'rb').read(); DEV=int(sys.argv[2]) if len(sys.argv)>2 else 6

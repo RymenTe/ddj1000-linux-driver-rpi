@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Send a synthetic track to one jog display (needs a running heartbeat, e.g. ddj1000-bridge.py).
 
-Generated with scripts/runtime/ddj1000_display.py, so it tests the decoded format, not a replay.
+Generated with scripts/runtime/ddj1000_display.py so it tests the decoded format, not a replay.
 Example: synth-test.py --deck 1 --bpm 120 --length 200 --start 83 --key 15 --hold 25
   -> expect on deck 1: BPM 120.0 (if the display derives it from the beat grid), time running from 1:23,
      track length 3:20, key code 15 (= G).

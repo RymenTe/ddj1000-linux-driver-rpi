@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # usage: python3 -I usbpcap-hid-dump.py <pcapng> <usb-device-nr> <out.txt>  -> "t ep hex" lines (EP 04/85 MIDI, 06/87 HID; HID-IN zero reports skipped)
 import sys, struct
 f=open(sys.argv[1],'rb').read(); dev=int(sys.argv[2]); off=0; t0=None

@@ -1,6 +1,7 @@
+#!/usr/bin/env python3
 # usage: python3 -I ddj-hid-decode.py <dump.txt from usbpcap-hid-dump.py> <deck 1-4> <t_from> <t_to>
 # Decodes one HID-OUT upload (EP 0x06) of a track load (rekordbox -> DDJ-1000 jog display), see
-# docs/research-jog-display-and-hw-mixer.md. Blocks: byte0 deck<<4, byte1 cmd, byte2 index, byte4 count, payload from byte 6.
+# docs/research-jog-display-and-hw-mixer.md - Blocks: byte0 deck<<4, byte1 cmd, byte2 index, byte4 count, payload from byte 6.
 import sys
 dump, deck, a, b = sys.argv[1], int(sys.argv[2]), float(sys.argv[3]), float(sys.argv[4])
 pre = '%x0' % deck
