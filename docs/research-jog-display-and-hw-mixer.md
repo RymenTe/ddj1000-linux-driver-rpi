@@ -197,6 +197,23 @@ Kein libusb und kein Claim an Interface 0 nötig. Skripte: `scripts/dev/display-
     startet eine neue Sitzung (CLAUDE.md), also gilt: **Unlock + Heartbeat ohne Lücke + HID**, alles im selben
     Prozess. Mit dem bisherigen Konzept (Unlock-Dienst einmalig, Mixxx ohne Heartbeat) geht es nicht.
 
+### Brückendienst (Weg A), Schritt 1 – 2026-11-09
+
+`scripts/runtime/ddj1000-bridge.py`: hält den DDJ-Rawmidi-FD (Unlock, Heartbeat dauerhaft) und leitet MIDI über
+**snd-virmidi** an Mixxx weiter (`modprobe snd-virmidi index=7 id=DDJBridge midi_devs=1`, Mixxx-Port „VirMIDI 7-0“,
+Controller „DDJ-1000 MIDI 1“ und DDJ-HID in Mixxx aus). Gemessen und vom User bestätigt: Grundfunktionen, LEDs,
+VU-Meter, Pads, Pad-Modus-Wechsel.
+- python-rtmidi (virtuelle ALSA-Ports) verworfen: Beim Startschwall von Mixxx stirbt der rtmidi-Eingangsthread
+  („MidiInAlsa::alsaMidiHandler: unknown MIDI input error … Resource temporarily unavailable“), danach meldet
+  Mixxx jede Ausgabe als Fehler. snd-virmidi = zweites Rawmidi-Gerät, kein Thread.
+- Ausgabe zum DDJ: Schreib-Thread, Heartbeat zuerst, Schreiben nur bei schreibbarem Puffer; Warteschlange
+  fasst gleiche `status+data1` zusammen. Mixxx sendet ~2000–3000 Nachrichten/s (v. a. Jog-Anzeige),
+  maximale Warteschlange 32, null Sendefehler.
+- **Heartbeat-Sitzung = rekordbox-Modus:** (1) Die Jog-Displays zeigen „Pioneer DJ rekordbox“ mit Ladekringel
+  und ignorieren die MIDI-Anzeige (Zeit/BPM/Key) → Anzeige nur noch per HID. (2) Pad-Modus-Tasten
+  (`9n 1B/1E/20/22`, Shift `69/6B/6D/6F`) schalten erst, wenn der Host die Note zurückschickt (MIDI-OUT „same as
+  MIDI-IN“) → die Brücke macht das selbst (Echo + andere Modi aus, nach dem Unlock HOT CUE).
+
 ## Quellen
 - Upstream [jan0803/ddj1000-linux-driver](https://github.com/jan0803/ddj1000-linux-driver) (`origin/main`)
 - [Mixxx-Wiki DDJ-1000](https://github.com/mixxxdj/mixxx/wiki/ddj-1000)

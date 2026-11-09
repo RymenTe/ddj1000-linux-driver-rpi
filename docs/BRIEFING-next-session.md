@@ -30,6 +30,14 @@ Erledigt 2026-11-08 nachmittags: PAD FX1 (rekordbox-Standard), Loops/Beat Loop a
 7. Wenn stabil: `DDJ-1000test` → `DDJ-1000` übernehmen und im Repo nachziehen; `rpi4` aktualisieren, User pusht.
 8. Aus 2026-11-07: Langzeittest > 1 h, Reboot-Test der Kette, Install-Skripte (uncommittete Änderungen klären).
 
+## Brückendienst (Stand 2026-11-09 15:40, Schritt 1 läuft)
+- Start (manuell): `sudo modprobe snd-virmidi index=7 id=DDJBridge midi_devs=1`, dann
+  `python3 -I scripts/runtime/ddj1000-bridge.py --stats-interval-s 30 > ~/build-logs/bridge-….log`, danach Mixxx.
+  Mixxx-Controller: „VirMIDI 7-0“ mit DDJ-1000test; „DDJ-1000 MIDI 1“ und „DDJ-1000__3“ (HID) aus.
+- Nach Reboot fehlt snd-virmidi (nur temporär geladen) → ohne Brücke: Mixxx-Controller zurück auf
+  „DDJ-1000 MIDI 1“ (Backup `~/.mixxx/mixxx.cfg.backup-20261109-1424`).
+- Nächster Schritt 2: HID-Display aus der Brücke (erst Replay pro Deck, dann eigene Daten).
+
 ## Jog-Display-Waveform (Stand 2026-11-09: Replay aus Mitschnitt funktioniert)
 - `scripts/dev/display-test/display-stage3.py` zeigt den rekordbox-Track farbig auf Deck 1 (Mixxx vorher beenden!).
 - Format: `docs/research-jog-display-and-hw-mixer.md` (Abschnitte „Zweiter Mitschnitt“ und „Display-Test“).
