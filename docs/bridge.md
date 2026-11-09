@@ -59,7 +59,7 @@ no audio with that kernel – boot the previous one or add a patch for the serie
 
 ```bash
 bash scripts/install-ddj1000-bridge.sh status
-journalctl -u 'ddj1000-bridge@*' -b --no-pager | tail -40
+journalctl -t ddj1000-bridge -b --no-pager | tail -40
 cat /proc/asound/cards               # DDJ1000 and DDJBridge (7) present?
 ```
 

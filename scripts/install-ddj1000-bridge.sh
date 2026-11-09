@@ -117,8 +117,8 @@ install_all() {
     run_privileged udevadm control --reload-rules
     if [[ "$mode" == "bridge" ]] && ! systemctl is-active --quiet 'ddj1000-bridge@*'; then
         # start now if the DDJ is already plugged in (otherwise udev starts it on plug-in)
-        run_privileged udevadm trigger --action=add --subsystem-match=sound \
-            --attr-match=idVendor=2b73 --attr-match=idProduct=0020 2>/dev/null || true
+        # (vendor/product sit on the parent USB device, so match the rawmidi nodes; the rule filters the DDJ)
+        run_privileged udevadm trigger --action=add --subsystem-match=sound --sysname-match='midiC*D0' || true
     fi
     echo
     echo "Done. Groups changed? log out and in again. Check: bash $0 status"
@@ -155,7 +155,7 @@ status() {
     printf '%-26s %s\n' "unlocked flag" "$( [[ -e /run/ddj1000/unlocked ]] && echo "yes (/run/ddj1000/unlocked)" || echo no)"
     printf '%-26s %s\n' "groups of $target_user" "$(id -nG "$target_user" 2>/dev/null | tr ' ' '\n' | grep -E '^(audio|plugdev)$' | tr '\n' ' ')"
     echo
-    echo "bridge log: journalctl -u 'ddj1000-bridge@*' -b --no-pager | tail -30"
+    echo "bridge log: journalctl -t ddj1000-bridge -b --no-pager | tail -30"
 }
 
 case "${1:-help}" in
