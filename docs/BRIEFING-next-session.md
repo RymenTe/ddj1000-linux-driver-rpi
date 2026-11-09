@@ -36,7 +36,9 @@ Erledigt 2026-11-08 nachmittags: PAD FX1 (rekordbox-Standard), Loops/Beat Loop a
   Mixxx-Controller: „VirMIDI 7-0“ mit DDJ-1000test; „DDJ-1000 MIDI 1“ und „DDJ-1000__3“ (HID) aus.
 - Nach Reboot fehlt snd-virmidi (nur temporär geladen) → ohne Brücke: Mixxx-Controller zurück auf
   „DDJ-1000 MIDI 1“ (Backup `~/.mixxx/mixxx.cfg.backup-20261109-1424`).
-- Nächster Schritt 2: HID-Display aus der Brücke (erst Replay pro Deck, dann eigene Daten).
+- Schritt 2a läuft (BPM/Zeit/Key/Tempo per HID aus Deck-Zustand-SysEx des Mappings). Nächstes: 2b Waveform aus
+  Mixxx-Analyse + Beatgrid aus der Mixxx-DB; offen: Sync/MASTER-Anzeige, Beat FX, Pad-Farben, Performance.
+- Bridge neu starten geht ohne Mixxx-Neustart (VirMIDI-Port gehört dem Kernel); danach neuer Unlock, Pad-Modi = HOT CUE.
 
 ## Jog-Display-Waveform (Stand 2026-11-09: Replay aus Mitschnitt funktioniert)
 - `scripts/dev/display-test/display-stage3.py` zeigt den rekordbox-Track farbig auf Deck 1 (Mixxx vorher beenden!).

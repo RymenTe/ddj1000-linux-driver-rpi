@@ -214,6 +214,29 @@ VU-Meter, Pads, Pad-Modus-Wechsel.
   (`9n 1B/1E/20/22`, Shift `69/6B/6D/6F`) schalten erst, wenn der Host die Note zurückschickt (MIDI-OUT „same as
   MIDI-IN“) → die Brücke macht das selbst (Echo + andere Modi aus, nach dem Unlock HOT CUE).
 
+### Brückendienst Schritt 2a – Jog-Display-Status per HID (2026-11-09)
+
+Feldsuche am Gerät (`scripts/dev/display-test/status-fields-test.py`, Phasen an der angezeigten Zeit erkennbar):
+- `0x21` Byte 21 = BPM ganzzahlig (`0x9f` → 159, `0x95` → 149), Byte 22 oberes Nibble = Zehntel (angenommen),
+  dasselbe in Byte 38–39. Im rekordbox-Mitschnitt standen beide Decks auf +6 % (150 × 1,06 = 159, 141,1 × 1,06 = 149,6).
+- `0x21` Byte 23–24 = **Tempo in 0,01 %** (int16 LE): 0 → 0.0 %, −300 → −3.0 %, +300 → +3.0 % (bestätigt).
+  Vorher für die Zahl der Waveform-Punkte gehalten (600 = +6,00 %).
+- `0x21` Byte 9 = `0xb4` Track geladen (0 → „not loaded“). Byte 5 Bit 7 hat keinen Einfluss auf das Tempo.
+- Key wird in **Camelot-Schreibweise** angezeigt (Code 15 = G → „9B“). Die Beat-Leiste (−4 … 16) kommt aus dem Beatgrid,
+  die BPM-Zahl nicht.
+- Synthetischer Upload aus `scripts/runtime/ddj1000_display.py` ist bis auf ein doppeltes `2d` identisch mit rekordbox.
+
+Umsetzung: Das Mapping sendet alle 50 ms je Deck eine SysEx `F0 7D 44 42 01 …` (Zustand: geladen, spielt, Position,
+Länge, Track-/aktuelle BPM, Tempo, Key, Key-Shift, erster Beat), die Brücke fängt sie ab
+(`ddj1000_display_state.py`). Sie lädt bei neuem Track (Länge/BPM geändert) Länge und Beatgrid hoch (Waveform noch leer)
+und sendet `0x21` mit 30 Hz pro Deck, die Position wird zwischen zwei Nachrichten hochgerechnet. Mit `bridgeMode` lässt
+das Mapping die MIDI-Jog-Ausgabe (Zeit/Position, BPM/Tempo) weg, die der DDJ in diesem Modus ignoriert:
+Mixxx → DDJ von ~1700/s auf ~86/s.
+- Fehler unterwegs: Upload-Signatur mit „erstem Beat“ (aus `beat_closest`, wackelt) → Upload alle 2–3 s, Ruckeln.
+- User: BPM, Zeit, Key, Tempo laufen. Offen: Sync/Beat Sync/MASTER-Anzeige auf den Jogs leuchtet nicht, Beat FX
+  wirkt nicht, Pad-Farben zum Teil falsch (Sampler kurz grün), Waveform (2b), Performance im Auge behalten (Mini-PC als
+  Option).
+
 ## Quellen
 - Upstream [jan0803/ddj1000-linux-driver](https://github.com/jan0803/ddj1000-linux-driver) (`origin/main`)
 - [Mixxx-Wiki DDJ-1000](https://github.com/mixxxdj/mixxx/wiki/ddj-1000)

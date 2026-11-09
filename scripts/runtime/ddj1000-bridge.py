@@ -9,7 +9,9 @@ snd-virmidi card (id "DDJBridge", e.g. `modprobe snd-virmidi index=7 id=DDJBridg
 which the bridge reads/writes as a second rawmidi device (python-rtmidi virtual ports lost their
 input thread under Mixxx's startup burst, 2026-11-09).
 
-Step 1 (this version): unlock, gapless heartbeat, MIDI forwarding in both directions.
+Step 1: unlock, gapless heartbeat, MIDI forwarding in both directions.
+Step 2a: jog displays via HID from deck-state SysEx sent by the Mixxx mapping
+(F0 7D 44 42 ..., see ddj1000_display_state.py; consumed here, never forwarded to the DDJ).
 - exactly one rawmidi FD (O_RDWR) for reading and writing; every message is written with one
   os.write, so SysEx from Mixxx reaches the DDJ in one USB bulk transfer
 - messages from Mixxx are only queued by the reader; one writer thread sends heartbeat first, then
@@ -41,6 +43,9 @@ def load_module(name, path):
     spec.loader.exec_module(module)
     return module
 
+
+sys.path.insert(0, str(HERE))
+import ddj1000_display_state as display_state  # noqa: E402
 
 ut = load_module("ddj1000_unlock_test", UNLOCK_TEST_PATH)
 p = ut.load_protocol()
@@ -121,6 +126,7 @@ class Bridge:
         self.queue_cv = threading.Condition()
         self.seq = 0
         self.stop = threading.Event()
+        self.display = None
 
     def log(self, msg):
         print(f"[{time.monotonic() - self.start:9.3f}] {msg}", flush=True)
@@ -173,6 +179,10 @@ class Bridge:
 
     # --- Mixxx -> DDJ: only queue, never block
     def from_mixxx(self, msg):
+        if msg.startswith(display_state.SYSEX_PREFIX):
+            if self.display is not None:
+                self.display.on_sysex(msg)
+            return
         if msg.startswith(SYSEX_HEAD) and len(msg) > len(SYSEX_HEAD) and msg[len(SYSEX_HEAD)] in HOST_SESSION_COMMANDS:
             self.stats["dropped_from_mixxx"] += 1
             return
@@ -204,6 +214,8 @@ class Bridge:
         if msg.startswith(p.DDJ_ACK_PREFIX):
             self.ack_at = time.monotonic()
             self.stats["unlocks"] += 1
+            if self.display is not None:
+                self.display.uploaded.clear()   # new session: upload tracks again
             self.log("RX 15 02 ACK -> UNLOCKED")
             for deck in range(4):
                 self.set_pad_mode(deck, 0x1B)
@@ -259,6 +271,9 @@ class Bridge:
         signal.signal(signal.SIGTERM, lambda *_: self.stop.set())
         writer = threading.Thread(target=self.writer, name="writer", daemon=True)
         writer.start()
+        if not a.no_display:
+            self.display = display_state.DisplayManager(self.log)
+            threading.Thread(target=self.display.run, name="display", daemon=True).start()
 
         parser = MidiParser()
         vparser = MidiParser()
@@ -269,7 +284,8 @@ class Bridge:
                 now = time.monotonic()
                 if a.stats_interval_s > 0 and now >= next_stats:
                     state = "unlocked" if self.ack_at is not None else "LOCKED"
-                    self.log(f"stats {state} heartbeats={self.heartbeats} backlog={len(self.queue)} {self.stats}")
+                    disp = self.display.stats if self.display is not None else {}
+                    self.log(f"stats {state} heartbeats={self.heartbeats} backlog={len(self.queue)} {self.stats} display={disp}")
                     next_stats = now + a.stats_interval_s
                 readable, _, _ = select.select([self.fd, self.vfd], [], [], 0.05)
                 for rfd in readable:
@@ -288,6 +304,8 @@ class Bridge:
             rc = 1
         finally:
             self.stop.set()
+            if self.display is not None:
+                self.display.stop.set()
             with self.queue_cv:
                 self.queue_cv.notify_all()
             writer.join(timeout=1.0)
@@ -315,6 +333,7 @@ def parse_args():
     ap.add_argument("--heartbeat-ms", type=float, default=200.0)
     ap.add_argument("--handshake-cooldown-s", type=float, default=2.0)
     ap.add_argument("--driver-read", action="store_true", help="vendor driver-presence read before opening MIDI")
+    ap.add_argument("--no-display", action="store_true", help="do not drive the jog displays (HID)")
     ap.add_argument("--log-pad-mode", action="store_true", help="log every pad mode change")
     ap.add_argument("--stats-interval-s", type=float, default=30.0, help="0 = no periodic stats")
     return ap.parse_args()
