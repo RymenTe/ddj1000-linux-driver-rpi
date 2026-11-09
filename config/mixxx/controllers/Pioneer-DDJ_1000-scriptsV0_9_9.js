@@ -1730,3 +1730,99 @@ PioneerDDJ1000.HotCueTouch = function(channel, control, value, status, group) {
         midi.sendShortMsg(port, control, PioneerDDJ1000.hotcuePadColour(deck, n));
     }
 };
+
+// ---------------------------------------------------------------------------------------------------------------
+// 2026-11-09: pad colours for PAD FX, BEAT JUMP and SAMPLER (colour codes = hue wheel, see cueColourCode),
+// following rekordbox: PAD FX cyan, beat jump backward red-orange / forward orange-yellow, sampler lit only
+// when a sample is loaded in Mixxx (blinks while playing). Sampler pads were not mapped before.
+// ---------------------------------------------------------------------------------------------------------------
+PioneerDDJ1000.PAD_COLOUR = {fx: 0x0A, jumpBack: 0x27, jumpFwd: 0x21, sampler: 0x31};
+PioneerDDJ1000.padPort = function(deck) { return 0x97 + 2 * (deck - 1); };
+
+PioneerDDJ1000.padFxLed = function(deck, note, pressed) {
+    var port = PioneerDDJ1000.padPort(deck);
+    midi.sendShortMsg(port, note, pressed ? HC_dimmedColor : PioneerDDJ1000.PAD_COLOUR.fx);
+};
+
+PioneerDDJ1000.padFxWrap = function(name) {
+    var orig = PioneerDDJ1000[name];
+    PioneerDDJ1000[name] = function(channel, control, value, status, group) {
+        orig(channel, control, value, status, group);
+        var deck = PioneerDDJ1000.PAD_STATUS_DECK[(status & 0x0F) | 0x90];
+        if (deck) {
+            PioneerDDJ1000.padFxLed(deck, control, (status & 0xF0) === 0x90 && value > 0);
+        }
+    };
+};
+PioneerDDJ1000.padFxWrap("padFx1");
+PioneerDDJ1000.padFxWrap("padFx2");
+
+// sampler slot for a deck pad: decks 1/3 -> Sampler 1-8, decks 2/4 -> Sampler 9-16 (if Mixxx has 16)
+PioneerDDJ1000.samplerSlot = function(deck, pad) {
+    var n = engine.getValue("[App]", "num_samplers");
+    return (deck % 2 === 0 && n >= 16) ? pad + 9 : pad + 1;
+};
+
+PioneerDDJ1000.samplerBlinkOn = false;
+
+PioneerDDJ1000.samplerLeds = function() {
+    for (var deck = 1; deck <= 4; deck++) {
+        var port = PioneerDDJ1000.padPort(deck);
+        for (var pad = 0; pad < 8; pad++) {
+            var g = "[Sampler" + PioneerDDJ1000.samplerSlot(deck, pad) + "]";
+            var c = Black;
+            if (engine.getValue(g, "track_loaded") > 0) {
+                c = (engine.getValue(g, "play") > 0 && !PioneerDDJ1000.samplerBlinkOn) ? Black
+                    : PioneerDDJ1000.PAD_COLOUR.sampler;
+            }
+            var key = port + ":" + pad;
+            if (PioneerDDJ1000.samplerLedCache[key] !== c) {
+                PioneerDDJ1000.samplerLedCache[key] = c;
+                midi.sendShortMsg(port, 0x30 + pad, c);
+                midi.sendShortMsg(port + 1, 0x30 + pad, c); // shift page
+            }
+        }
+    }
+};
+
+// pad: play the slot from its start; Shift + pad: stop
+PioneerDDJ1000.samplerPad = function(channel, control, value, status, group) {
+    var base = 0x90 | (status & 0x0F);
+    var shift = (base % 2) === 0; // 0x97/0x99/... = normal, 0x98/0x9A/... = shift
+    var deck = PioneerDDJ1000.PAD_STATUS_DECK[shift ? base - 1 : base];
+    if (!deck || (status & 0xF0) !== 0x90 || value === 0) { return; }
+    var g = "[Sampler" + PioneerDDJ1000.samplerSlot(deck, control - 0x30) + "]";
+    if (engine.getValue(g, "track_loaded") <= 0) { return; }
+    if (shift) {
+        engine.setValue(g, "cue_gotoandstop", 1);
+    } else {
+        engine.setValue(g, "cue_gotoandplay", 1);
+    }
+};
+
+PioneerDDJ1000.staticPadLeds = function() {
+    for (var deck = 1; deck <= 4; deck++) {
+        var port = PioneerDDJ1000.padPort(deck);
+        for (var i = 0; i < 8; i++) {
+            midi.sendShortMsg(port, 0x10 + i, PioneerDDJ1000.PAD_COLOUR.fx);   // PAD FX1
+            midi.sendShortMsg(port, 0x50 + i, PioneerDDJ1000.PAD_COLOUR.fx);   // PAD FX2
+        }
+        for (var j = 0; j < 16; j++) {   // BEAT JUMP, both pages: even = backward, odd = forward
+            midi.sendShortMsg(port, 0x20 + j, (j % 2) ? PioneerDDJ1000.PAD_COLOUR.jumpFwd
+                                                     : PioneerDDJ1000.PAD_COLOUR.jumpBack);
+        }
+    }
+    PioneerDDJ1000.samplerLedCache = {};
+    PioneerDDJ1000.samplerLeds();
+};
+
+PioneerDDJ1000.padColourInitOrig = PioneerDDJ1000.HotCueTriggerInit;
+PioneerDDJ1000.HotCueTriggerInit = function() {
+    PioneerDDJ1000.padColourInitOrig();
+    PioneerDDJ1000.staticPadLeds();
+    if (PioneerDDJ1000.samplerLedTimer) { engine.stopTimer(PioneerDDJ1000.samplerLedTimer); }
+    PioneerDDJ1000.samplerLedTimer = engine.beginTimer(250, function() {
+        PioneerDDJ1000.samplerBlinkOn = !PioneerDDJ1000.samplerBlinkOn;
+        PioneerDDJ1000.samplerLeds();
+    });
+};
