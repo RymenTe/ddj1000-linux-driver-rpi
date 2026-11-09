@@ -187,6 +187,15 @@ Kein libusb und kein Claim an Interface 0 nötig. Skripte: `scripts/dev/display-
   Sitzung, und das passt nicht mehr zu „Unlock-Dienst einmalig, danach ohne Heartbeat“. Einen gemeinsamen
   Dienst für Unlock + Heartbeat + Display (Rawmidi-FD exklusiv) planen; Mixxx liefert die Daten über eine
   Schnittstelle (z. B. Datei/Socket aus dem Controller-Script).
+- **Mindestbedingung (2026-11-09, je Test mit „go“ des Users):**
+  - T1 Deck 2, Heartbeat läuft, eigener Unlock, **ohne** rekordbox-Init (`--no-init`) → Track + Waveform angezeigt.
+    Die Init-SysEx (`00 0b 31…`, `03 01`) ist also nicht nötig. Der Unlock-Vorspann (`00 0a/0b 2b 68/0c`) wird trotzdem gesendet.
+  - T2 Deck 1, Heartbeat stoppt 0,5 s nach dem ACK (`--hb-stop-after-ack 0.5`), Upload ohne Heartbeat → Track
+    erscheint kurz und **fällt sofort auf „Pioneer DJ“ zurück**. Nach jedem Testende (Heartbeat aus) zeigen
+    beide Displays wieder „Pioneer DJ“.
+  - **Ergebnis: Die Display-Anzeige braucht einen dauerhaft laufenden Heartbeat.** Ein neu einsetzender Heartbeat
+    startet eine neue Sitzung (CLAUDE.md), also gilt: **Unlock + Heartbeat ohne Lücke + HID**, alles im selben
+    Prozess. Mit dem bisherigen Konzept (Unlock-Dienst einmalig, Mixxx ohne Heartbeat) geht es nicht.
 
 ## Quellen
 - Upstream [jan0803/ddj1000-linux-driver](https://github.com/jan0803/ddj1000-linux-driver) (`origin/main`)
