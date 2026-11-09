@@ -5,7 +5,8 @@ The Mixxx mapping sends one SysEx per deck about 20x/s (never forwarded to the D
      <tempo*100 + 2^20:3> <key 0-24 (Mixxx)> <key shift + 12> <first beat ms:3> F7
   numbers as little-endian 7-bit groups; flags bit0 loaded, bit1 playing, bit2 sync leader, bit3 sync on.
 Hot cues 1-8 (on change and every 2 s):
-  F0 7D 44 42 02 <deck 0-3> { <status 0/1> <Mixxx hotcue type> <pos ms:4> <rgb:4> } x8 F7
+  F0 7D 44 42 02 <deck 0-3> { <status 0/1> <Mixxx hotcue type> <pos ms:4> <rgb:4> } x8
+     <loop flags: bit0 start set, bit1 end set, bit2 enabled> <loop start ms:4> <loop end ms:4> F7
 """
 
 import os
@@ -57,7 +58,7 @@ def parse_state(msg):
 
 
 def parse_cues(msg):
-    """-> (deck 1-4, [None | (DDJ type, colour code, position ms)] x8) or None."""
+    """-> (deck 1-4, [None | (DDJ type, colour code, position ms)] x8, loop (start|None, end|None, active))."""
     if not msg.startswith(SYSEX_PREFIX) or len(msg) < 6 + 8 * 10 + 1 or msg[4] != 0x02:
         return None
     deck = msg[5] + 1
@@ -69,7 +70,13 @@ def parse_cues(msg):
         rgb, p = dec7(msg, p, 4)
         # Mixxx type 4 = saved loop -> 02 (rekordbox capture: loop slot has type 02)
         cues.append((0x02 if mtype == 4 else 0x01, d.cue_colour(rgb), float(pos)) if status else None)
-    return deck, cues
+    loop = (None, None, False)
+    if len(msg) >= p + 9 + 1:
+        lflags = msg[p]
+        ls, q = dec7(msg, p + 1, 4)
+        le, q = dec7(msg, q, 4)
+        loop = (float(ls) if lflags & 1 else None, float(le) if lflags & 2 else None, bool(lflags & 4))
+    return deck, cues, loop
 
 
 class DisplayManager:
@@ -86,6 +93,7 @@ class DisplayManager:
         self.tracks = mt.TrackLookup(log)
         self.retry = {}   # deck -> (next try, give up at) while the waveform is missing
         self.cues = {}         # deck -> latest hot-cue list from Mixxx
+        self.loops = {}        # deck -> (start ms|None, end ms|None, active)
         self.cues_sent = {}    # deck -> (length, cues) last sent to the DDJ
         self.stats["cue_updates"] = 0
 
@@ -97,6 +105,9 @@ class DisplayManager:
                 return False
             with self.lock:
                 self.cues[cu[0]] = cu[1]
+                if self.loops.get(cu[0]) != cu[2]:
+                    self.log(f"display: deck {cu[0]} loop start={cu[2][0]} end={cu[2][1]} active={cu[2][2]}")
+                self.loops[cu[0]] = cu[2]
             return True
         with self.lock:
             self.states[st["deck"]] = st
@@ -160,6 +171,7 @@ class DisplayManager:
             with self.lock:
                 states = dict(self.states)
                 cues = dict(self.cues)
+                loops = dict(self.loops)
             for deck, st in sorted(states.items()):
                 sig = self.signature(st)
                 if sig != self.uploaded.get(deck):
@@ -195,7 +207,7 @@ class DisplayManager:
                 pos = max(0.0, min(pos, st["len"]))
                 self.write(d.status(deck, pos, st["len"], mixxx_key_to_ddj(st["key"]), st["shift"],
                                     bpm=st["bpm"], tempo_pct=st["tempo"], loaded=st["loaded"],
-                                    master=st["leader"], sync=st["sync"]))
+                                    master=st["leader"], sync=st["sync"], loop=loops.get(deck)))
                 self.stats["status_reports"] += 1
             self.stop.wait(max(0.0, t_next - time.monotonic()))
         if self.fd is not None:

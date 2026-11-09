@@ -272,7 +272,16 @@ bernstein, Höhen weiß), dunkle/helle Variante als Farbpaar. Suche ~70 ms.
 - **Farbcode = Farbkreis-Index** (alle getesteten Codes `01`–`3C` gültig, Fotos 2026-11-09): `01`–`09` blau→cyan,
   `0C` türkis, `12` blaugrün, `16` grün, `1A` gelbgrün, `1E` gelb, `24` orange, `2A` rot, `30` rosa, `36` magenta-rosa,
   `3C` lavendel. Für Mixxx: RGB → Farbton → nächster Code (Stützpunkte oben).
-- Offen: Loop-Darstellung über `0x21`, Memory Cues/Haupt-Cue, Typ `02`.
+- **Loop (gerätegetestet 2026-11-09):** `0x21` Byte 25–27 Start ms (u24 LE, Bit 7 von Byte 27 = Loop nicht aktiv; ohne
+  Loop `00 00 80`), Byte 28–30 Ende ms, **und Byte 9 Bit 3 (`b4` → `bc`) = Loop aktiv** – ohne dieses Flag ignoriert das
+  Display das Loop-Feld. rekordbox-Folge: `bc` → Start|0x800000 → Ende → Bit 7 gelöscht. Anzeige: rot-oranger Block auf
+  dem Beat-Lineal, Abspielmarke rot. Quelle in Mixxx: `loop_start_position`/`loop_end_position`/`loop_enabled`
+  (mit in der Hot-Cue-SysEx `F0 7D 44 42 02`).
+- Brücke: Hot Cues A–H live (`30 01` + `30 02` nach Upload und bei Änderung), Farbe RGB → Farbkreis-Code (User: „Colors passen“).
+- Offen: Memory Cues/Haupt-Cue, Typ `02` (gespeicherte Loops) optisch, Byte 55–59 (nächster Cue),
+  Display folgt nicht dem Deck-Wechsel 1↔3 / 2↔4, Hot-Cue-Farbe im Pioneered-Skin nicht editierbar.
+- Brücke bleibt nach schnellem Neustart (< 1 s) `LOCKED` (DDJ sendet kein `11 02`) → 5 s warten; später: Heartbeat bei
+  LOCKED kurz aussetzen, um eine neue Sitzung zu erzwingen.
 
 ## Quellen
 - Upstream [jan0803/ddj1000-linux-driver](https://github.com/jan0803/ddj1000-linux-driver) (`origin/main`)
