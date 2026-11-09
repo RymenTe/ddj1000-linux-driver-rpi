@@ -112,27 +112,27 @@ def bpm_field(bpm):
 
 
 def status(deck, position_ms, length_ms, key_code=0, key_shift=0, bpm=0.0, tempo_pct=0.0,
-           loaded=True, master=False, flags=0x18, flags3=0x0A):
+           loaded=True, master=False, sync=False, flags=0x18, flags3=0x0A):
     """0x21 deck status (fields confirmed on the device 2026-11-09 unless noted):
     9 = 0xb4 track loaded (0 -> "not loaded"), 11-14 position mm ss ms16, 15-18 length,
     21-22 (and 38-39) BPM, 23-24 tempo in 0.01 % (int16 LE), 60 = 0x80 | key code (MIDI 9n 49 table,
     shown in Camelot notation), 61 = key variation (0x0D = 0).
-    Unknown/copied from rekordbox: 2 (18, 1a when parked at cue), 3, 4, 5 (bit 7 not tempo), 27 (0x80,
-    "MASTER"?), 58."""
+    5 = 0x01 | 0x80 "MASTER" | 0x10 "SYNC" (0x20 also lights SYNC; "BEAT SYNC" bit not found yet).
+    Unknown/copied from rekordbox: 2 (18, 1a when parked at cue), 3, 4, 27 (0x80, no visible effect), 58."""
     rep = bytearray(REPORT_SIZE)
     rep[0] = deck_byte(deck)
     rep[1] = 0x21
     rep[2] = flags
     rep[3] = flags3
     rep[4] = 0x11
-    rep[5] = 0x01
+    rep[5] = 0x01 | (0x80 if master else 0) | (0x10 if sync else 0)
     rep[9] = 0xB4 if loaded else 0x00
     rep[11:15] = length_field(position_ms)
     rep[15:19] = length_field(length_ms)
     rep[21:23] = bpm_field(bpm)
     rep[38:40] = rep[21:23]
     rep[23:25] = int(round(max(-100.0, min(100.0, tempo_pct)) * 100)).to_bytes(2, "little", signed=True)
-    rep[27] = 0x80 if master else 0x00   # assumption: "MASTER" label (rekordbox sent 0x80)
+    rep[27] = 0x80   # as rekordbox sends it; no visible effect found (2026-11-09)
     rep[58] = 0x01
     rep[60] = (0x80 | (key_code & 0x1F)) if key_code else 0x80
     rep[61] = max(1, min(0x19, 0x0D + int(key_shift)))
