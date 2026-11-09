@@ -4941,6 +4941,646 @@
                     <script-binding/>
                 </options>
             </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 1 CH1 (2026-11-09)</description>
+                <status>0x97</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 2 CH1 (2026-11-09)</description>
+                <status>0x97</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 3 CH1 (2026-11-09)</description>
+                <status>0x97</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 4 CH1 (2026-11-09)</description>
+                <status>0x97</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 5 CH1 (2026-11-09)</description>
+                <status>0x97</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 6 CH1 (2026-11-09)</description>
+                <status>0x97</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 7 CH1 (2026-11-09)</description>
+                <status>0x97</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 8 CH1 (2026-11-09)</description>
+                <status>0x97</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 1 CH1 Shift (stop) (2026-11-09)</description>
+                <status>0x98</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 2 CH1 Shift (stop) (2026-11-09)</description>
+                <status>0x98</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 3 CH1 Shift (stop) (2026-11-09)</description>
+                <status>0x98</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 4 CH1 Shift (stop) (2026-11-09)</description>
+                <status>0x98</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 5 CH1 Shift (stop) (2026-11-09)</description>
+                <status>0x98</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 6 CH1 Shift (stop) (2026-11-09)</description>
+                <status>0x98</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 7 CH1 Shift (stop) (2026-11-09)</description>
+                <status>0x98</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 8 CH1 Shift (stop) (2026-11-09)</description>
+                <status>0x98</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 1 CH2 (2026-11-09)</description>
+                <status>0x99</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 2 CH2 (2026-11-09)</description>
+                <status>0x99</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 3 CH2 (2026-11-09)</description>
+                <status>0x99</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 4 CH2 (2026-11-09)</description>
+                <status>0x99</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 5 CH2 (2026-11-09)</description>
+                <status>0x99</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 6 CH2 (2026-11-09)</description>
+                <status>0x99</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 7 CH2 (2026-11-09)</description>
+                <status>0x99</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 8 CH2 (2026-11-09)</description>
+                <status>0x99</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 1 CH2 Shift (stop) (2026-11-09)</description>
+                <status>0x9A</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 2 CH2 Shift (stop) (2026-11-09)</description>
+                <status>0x9A</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 3 CH2 Shift (stop) (2026-11-09)</description>
+                <status>0x9A</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 4 CH2 Shift (stop) (2026-11-09)</description>
+                <status>0x9A</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 5 CH2 Shift (stop) (2026-11-09)</description>
+                <status>0x9A</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 6 CH2 Shift (stop) (2026-11-09)</description>
+                <status>0x9A</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 7 CH2 Shift (stop) (2026-11-09)</description>
+                <status>0x9A</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 8 CH2 Shift (stop) (2026-11-09)</description>
+                <status>0x9A</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 1 CH3 (2026-11-09)</description>
+                <status>0x9B</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 2 CH3 (2026-11-09)</description>
+                <status>0x9B</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 3 CH3 (2026-11-09)</description>
+                <status>0x9B</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 4 CH3 (2026-11-09)</description>
+                <status>0x9B</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 5 CH3 (2026-11-09)</description>
+                <status>0x9B</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 6 CH3 (2026-11-09)</description>
+                <status>0x9B</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 7 CH3 (2026-11-09)</description>
+                <status>0x9B</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 8 CH3 (2026-11-09)</description>
+                <status>0x9B</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 1 CH3 Shift (stop) (2026-11-09)</description>
+                <status>0x9C</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 2 CH3 Shift (stop) (2026-11-09)</description>
+                <status>0x9C</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 3 CH3 Shift (stop) (2026-11-09)</description>
+                <status>0x9C</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 4 CH3 Shift (stop) (2026-11-09)</description>
+                <status>0x9C</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 5 CH3 Shift (stop) (2026-11-09)</description>
+                <status>0x9C</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 6 CH3 Shift (stop) (2026-11-09)</description>
+                <status>0x9C</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 7 CH3 Shift (stop) (2026-11-09)</description>
+                <status>0x9C</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 8 CH3 Shift (stop) (2026-11-09)</description>
+                <status>0x9C</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 1 CH4 (2026-11-09)</description>
+                <status>0x9D</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 2 CH4 (2026-11-09)</description>
+                <status>0x9D</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 3 CH4 (2026-11-09)</description>
+                <status>0x9D</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 4 CH4 (2026-11-09)</description>
+                <status>0x9D</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 5 CH4 (2026-11-09)</description>
+                <status>0x9D</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 6 CH4 (2026-11-09)</description>
+                <status>0x9D</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 7 CH4 (2026-11-09)</description>
+                <status>0x9D</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 8 CH4 (2026-11-09)</description>
+                <status>0x9D</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 1 CH4 Shift (stop) (2026-11-09)</description>
+                <status>0x9E</status>
+                <midino>0x30</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 2 CH4 Shift (stop) (2026-11-09)</description>
+                <status>0x9E</status>
+                <midino>0x31</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 3 CH4 Shift (stop) (2026-11-09)</description>
+                <status>0x9E</status>
+                <midino>0x32</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 4 CH4 Shift (stop) (2026-11-09)</description>
+                <status>0x9E</status>
+                <midino>0x33</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 5 CH4 Shift (stop) (2026-11-09)</description>
+                <status>0x9E</status>
+                <midino>0x34</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 6 CH4 Shift (stop) (2026-11-09)</description>
+                <status>0x9E</status>
+                <midino>0x35</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 7 CH4 Shift (stop) (2026-11-09)</description>
+                <status>0x9E</status>
+                <midino>0x36</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.samplerPad</key>
+                <description>SAMPLER pad 8 CH4 Shift (stop) (2026-11-09)</description>
+                <status>0x9E</status>
+                <midino>0x37</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
         </controls>
         <outputs>
             <output>
