@@ -1519,3 +1519,18 @@ PioneerDDJ1000.browsePush = function(channel, control, value, status, group) {
     }
     engine.setValue("[Channel" + deck + "]", "LoadSelectedTrack", 1);
 };
+
+// 2026-11-09: CROSSFADER ASSIGN switches (DDJ-1000RB MIDI Messages: 9n 16 = A, 9n 1D = THRU, 9n 18 = B).
+// The DDJ sends the new position with 0x7F (also in the status dump when the mapping loads).
+// Mixxx orientation: 0 = left (A), 1 = center (THRU), 2 = right (B).
+PioneerDDJ1000.crossfaderAssign = function(channel, control, value, status, group) {
+    if (value !== 0x7F) {
+        return;
+    }
+    var orientation = {0x16: 0, 0x1D: 1, 0x18: 2}[control];
+    if (orientation === undefined) {
+        return;
+    }
+    engine.setValue(group, "orientation", orientation);
+    print("DDJ-1000 XfaderAssign: " + group + " note 0x" + control.toString(16) + " -> orientation " + orientation);
+};
