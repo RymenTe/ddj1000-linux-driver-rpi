@@ -233,7 +233,10 @@ und sendet `0x21` mit 30 Hz pro Deck, die Position wird zwischen zwei Nachrichte
 das Mapping die MIDI-Jog-Ausgabe (Zeit/Position, BPM/Tempo) weg, die der DDJ in diesem Modus ignoriert:
 Mixxx → DDJ von ~1700/s auf ~86/s.
 - Fehler unterwegs: Upload-Signatur mit „erstem Beat“ (aus `beat_closest`, wackelt) → Upload alle 2–3 s, Ruckeln.
-- User: BPM, Zeit, Key, Tempo laufen. Offen: Sync/Beat Sync/MASTER-Anzeige auf den Jogs leuchtet nicht, Beat FX
+- Sync/MASTER (Feldtests 2026-11-09): `0x21` **Byte 5 Bit 7 = „MASTER“**, **Bit 4 (und Bit 5) = „SYNC“**; Byte 27 und
+  Byte 3 (`08`/`02`) ohne sichtbare Wirkung, „BEAT SYNC“-Bit nicht gefunden. Mapping meldet `sync_enabled`
+  (Flag-Bit 3) und `sync_leader` (Bit 2) → vom User bestätigt.
+- User: BPM, Zeit, Key, Tempo laufen. Offen: Beat FX
   wirkt nicht, Pad-Farben zum Teil falsch (Sampler kurz grün), Waveform (2b), Performance im Auge behalten (Mini-PC als
   Option).
 

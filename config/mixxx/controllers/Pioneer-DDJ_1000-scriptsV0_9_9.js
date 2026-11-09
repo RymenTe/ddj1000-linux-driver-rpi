@@ -1571,7 +1571,8 @@ PioneerDDJ1000.bridgeSendState = function() {
             firstBeat = ((closest / (rate * 2)) * 1000) % beatMs;
         }
         var flags = (loaded ? 1 : 0) | (engine.getValue(g, "play") > 0 ? 2 : 0) |
-                    (engine.getValue(g, "sync_leader") > 0 ? 4 : 0);
+                    (engine.getValue(g, "sync_leader") > 0 ? 4 : 0) |
+                    (engine.getValue(g, "sync_enabled") > 0 ? 8 : 0);
         var shift = Math.max(-12, Math.min(12, Math.round(engine.getValue(g, "pitch_adjust"))));
         var msg = [0xF0, 0x7D, 0x44, 0x42, 0x01, d - 1, flags];
         PioneerDDJ1000.bridgeEnc(msg, engine.getValue(g, "playposition") * duration * 1000, 4);

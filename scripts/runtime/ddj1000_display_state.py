@@ -3,7 +3,7 @@
 The Mixxx mapping sends one SysEx per deck about 20x/s (never forwarded to the DDJ):
   F0 7D 44 42 01 <deck 0-3> <flags> <pos ms:4> <len ms:4> <file bpm*100:3> <bpm*100:3>
      <tempo*100 + 2^20:3> <key 0-24 (Mixxx)> <key shift + 12> <first beat ms:3> F7
-  numbers as little-endian 7-bit groups; flags bit0 loaded, bit1 playing, bit2 sync leader.
+  numbers as little-endian 7-bit groups; flags bit0 loaded, bit1 playing, bit2 sync leader, bit3 sync on.
 """
 
 import os
@@ -47,7 +47,7 @@ def parse_state(msg):
     key = msg[p]; p += 1
     shift = msg[p] - 12; p += 1
     first, p = dec7(msg, p, 3)
-    return {"deck": deck + 1, "loaded": bool(flags & 1), "playing": bool(flags & 2), "leader": bool(flags & 4),
+    return {"deck": deck + 1, "loaded": bool(flags & 1), "playing": bool(flags & 2), "leader": bool(flags & 4), "sync": bool(flags & 8),
             "pos": float(pos), "len": float(length), "file_bpm": fbpm / 100.0, "bpm": bpm / 100.0,
             "tempo": (tempo - TEMPO_OFFSET) / 100.0, "key": key, "shift": shift, "first_beat": float(first),
             "t": time.monotonic()}
@@ -128,7 +128,7 @@ class DisplayManager:
                 pos = max(0.0, min(pos, st["len"]))
                 self.write(d.status(deck, pos, st["len"], mixxx_key_to_ddj(st["key"]), st["shift"],
                                     bpm=st["bpm"], tempo_pct=st["tempo"], loaded=st["loaded"],
-                                    master=st["leader"]))
+                                    master=st["leader"], sync=st["sync"]))
                 self.stats["status_reports"] += 1
             self.stop.wait(max(0.0, t_next - time.monotonic()))
         if self.fd is not None:
