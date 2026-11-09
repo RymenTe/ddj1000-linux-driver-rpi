@@ -303,3 +303,15 @@ Offen → siehe `docs/BRIEFING-next-session.md`.
   ausgeschaltet); Hardware macht Beat FX auf MST. Details: `docs/research-jog-display-and-hw-mixer.md`.
 - Backups: `~/.mixxx/controllers/*.backup-20261108-{1254,1305,1330,1419,1532}`,
   `~/.mixxx/effects.xml.backup-20261108-133122`, `~/.config/{sway/config,waybar/mixxx.sh}.backup-20261108-1305`.
+
+## 2026-11-09 (13:20–13:45) – Jog-Display: Cue-Marker, Key, Sync, Tempo
+
+- Quelle: offizielles PDF „DDJ-1000RB – MIDI Messages“ (pestrela/ddj), S. 8; Key-Tabelle (*3) nur als Bild →
+  ausgelesen, in `docs/research-jog-display-and-hw-mixer.md` übernommen.
+- Script: Cue-Marker `Bn 17/37` (Main-Cue, ausblenden `7F/7F`), Key `9n 49` + Variation `9n 4A` (`key`/`pitch_adjust`),
+  Sync `9n 59/5A`; Tempo `Bn 16/36` aus `bpm/file_bpm` (negative Werte wurden wie positive gesendet);
+  Positionsbalken aus voller Zeit (vorher 180°-Sprung je Minute). Backup `…scriptsV0_9_9.js.backup-20261109-1327`.
+- Mixxx lädt das Script beim Speichern selbst neu; ein Zwischenstand beim Editieren erzeugte kurz
+  „JogDisplayConnect is not a function“ – letzter Ladevorgang fehlerfrei.
+- User-Test: „geht alles“. Kleine Abweichung der Tempo-%-Anzeige an den Pitch-Enden zwischen Mixxx und Display.
+- `rpi4` per Worktree-Cherry-Pick auf `9ffbf0f` (3 Commits vor `fork/rpi4`), Push durch User.
