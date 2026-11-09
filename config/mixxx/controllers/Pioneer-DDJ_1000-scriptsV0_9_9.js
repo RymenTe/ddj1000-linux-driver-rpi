@@ -300,7 +300,10 @@ var timeTypeCH4 = 0;
 		engine.connectControl("[Channel2]","bpm","PioneerDDJ1000.BpmOnJogCH2");
 		engine.connectControl("[Channel3]","bpm","PioneerDDJ1000.BpmOnJogCH3");
 		engine.connectControl("[Channel4]","bpm","PioneerDDJ1000.BpmOnJogCH4");
-		
+
+		// ------ Cue marker, key, sync on jog (2026-11-09)
+		PioneerDDJ1000.JogDisplayConnect();
+
 		// Timer
 		// ------ End of track blinking
 		engine.beginTimer(250,"PioneerDDJ1000.EndOfTrackBlink()");
@@ -771,19 +774,85 @@ var timeTypeCH4 = 0;
 			midi.sendShortMsg(midiPort,0x43,actualSecondes); // send secondes
 		}
 		
-		PioneerDDJ1000.CurrentPositionBarUpdate(channel,actualSecondes); // Update Position Bar for channel 4
+		// 2026-11-09: full time instead of seconds%60 (avoided a 180° jump every minute)
+		PioneerDDJ1000.CurrentPositionBarUpdate(channel,actualTime);
 	};
-	
+
+	// 2026-11-09: angle on the jog ring for a track time in seconds (0..359)
+	PioneerDDJ1000.jogAngle = function (seconds) {
+		return Math.floor(seconds*9*positionBarSpeedFactor) % 360;
+	};
+
 	PioneerDDJ1000.CurrentPositionBarUpdate = function (channelNumber,value){ // David Goodenough
-		var currentBarPosition = value*9*positionBarSpeedFactor;
 		var channelNbrCode = 176+(channelNumber-1);
-		var valueOnA360Circle = currentBarPosition%360;
+		var valueOnA360Circle = PioneerDDJ1000.jogAngle(value);
 		var MSB = Math.floor(valueOnA360Circle/128);
 		var LSB = valueOnA360Circle - (128*MSB);
-		
+
 		midi.sendShortMsg(channelNbrCode,0x14,MSB);
 		midi.sendShortMsg(channelNbrCode,0x34,LSB);
-		
+
+	};
+
+	// ----- 2026-11-09: further jog display info (DDJ-1000RB MIDI Messages, p. 8)
+
+	// Cue marker Bn 17/37: angle of the main cue point, 0x7F/0x7F hides it
+	PioneerDDJ1000.CueMarkerDisplay = function (value, group) {
+		var channel = script.deckFromGroup(group);
+		var port = 0xB0 + (channel-1);
+		var cue = engine.getValue(group, "cue_point");
+		var samples = engine.getValue(group, "track_samples");
+		var duration = engine.getValue(group, "duration");
+		if (cue < 0 || samples <= 0 || duration <= 0) {
+			midi.sendShortMsg(port,0x17,0x7F);
+			midi.sendShortMsg(port,0x37,0x7F);
+			return;
+		}
+		var angle = PioneerDDJ1000.jogAngle(cue / samples * duration);
+		midi.sendShortMsg(port,0x17,Math.floor(angle/128));
+		midi.sendShortMsg(port,0x37,angle%128);
+	};
+
+	// Key 9n 49: Mixxx key 1-12 = C..B major, 13-24 = C..B minor (0 = none)
+	// DDJ: 0 = "---", 1 = C, 2 = Am, 3 = Db, 4 = Bbm ... (major + relative minor, ascending)
+	PioneerDDJ1000.KeyDisplay = function (value, group) {
+		var channel = script.deckFromGroup(group);
+		var key = Math.round(engine.getValue(group, "key"));
+		var code = 0;
+		if (key >= 1 && key <= 12) {
+			code = 1 + 2*(key-1);
+		} else if (key >= 13 && key <= 24) {
+			code = 2 + 2*(((key-13)+3) % 12);
+		}
+		midi.sendShortMsg(0x90+(channel-1),0x49,code);
+		// Key variation 9n 4A: 0x0D = 0, +-12 semitones
+		var shift = Math.round(engine.getValue(group, "pitch_adjust"));
+		shift = Math.max(-12, Math.min(12, shift));
+		midi.sendShortMsg(0x90+(channel-1),0x4A,0x0D+shift);
+	};
+
+	// Beat Sync Master 9n 59 / Beat Sync State 9n 5A
+	PioneerDDJ1000.SyncDisplay = function (value, group) {
+		var channel = script.deckFromGroup(group);
+		midi.sendShortMsg(0x90+(channel-1),0x59,engine.getValue(group, "sync_leader") > 0 ? 0x7F : 0x00);
+		midi.sendShortMsg(0x90+(channel-1),0x5A,engine.getValue(group, "sync_enabled") > 0 ? 0x7F : 0x00);
+	};
+
+	PioneerDDJ1000.JogDisplayConnect = function () {
+		var controls = {
+			"cue_point": PioneerDDJ1000.CueMarkerDisplay,
+			"track_samples": PioneerDDJ1000.CueMarkerDisplay,
+			"key": PioneerDDJ1000.KeyDisplay,
+			"pitch_adjust": PioneerDDJ1000.KeyDisplay,
+			"sync_leader": PioneerDDJ1000.SyncDisplay,
+			"sync_enabled": PioneerDDJ1000.SyncDisplay
+		};
+		for (var d = 1; d <= 4; d++) {
+			var group = "[Channel" + d + "]";
+			for (var co in controls) {
+				engine.makeConnection(group, co, controls[co]).trigger();
+			}
+		}
 	};
 	
 	PioneerDDJ1000.TimeTypeChangeGlobal = function (channel, control, value, status, group) { 
@@ -877,18 +946,18 @@ var timeTypeCH4 = 0;
 		midi.sendShortMsg(midiPort,0x15,MSB);
 		midi.sendShortMsg(midiPort,0x35,LSB);
 		
-		// Pitch Range update
-
-		if (absolutePitchRange < 0) {
-			adaptPitchRange = 1000 - absolutePitchRange;
-			MSB = Math.floor(adaptPitchRange / 128);
-			LSB = adaptPitchRange % 128;
-		} else {
-			adaptPitchRange = 1000 + absolutePitchRange;
-			MSB = Math.floor(adaptPitchRange / 128);
-			LSB = adaptPitchRange % 128;
+		// Playing speed Bn 16/36: 1000 = 0.0 %, steps of 0.1 % (0 = -100 %, 2000 = +100 %)
+		// 2026-11-09: computed from bpm/file_bpm (independent of the pitch fader direction);
+		// before, negative speeds were sent like positive ones (1000 - negative).
+		var fileBpm = engine.getValue(group, "file_bpm");
+		if (fileBpm > 0 && value > 0) {
+			absolutePitchRange = Math.round((value / fileBpm - 1) * 1000);
 		}
-		
+		absolutePitchRange = Math.max(-1000, Math.min(1000, absolutePitchRange));
+		adaptPitchRange = 1000 + absolutePitchRange;
+		MSB = Math.floor(adaptPitchRange / 128);
+		LSB = adaptPitchRange % 128;
+
 		midi.sendShortMsg(midiPort,0x16,MSB);
 		midi.sendShortMsg(midiPort,0x36,LSB);
 	};
