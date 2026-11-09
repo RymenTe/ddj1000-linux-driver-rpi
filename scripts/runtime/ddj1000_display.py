@@ -129,7 +129,7 @@ def cue_colour(rgb):
             return 0x01 if hue < -105.0 else 0x3C
     for (h1, c1), (h2, c2) in zip(CUE_HUE_ANCHORS, CUE_HUE_ANCHORS[1:]):
         if h2 <= hue <= h1:
-            return int(round(c1 + (c2 - c1) * (h1 - hue) / (h1 - h2)))
+            return int(c1 + (c2 - c1) * (h1 - hue) / (h1 - h2) + 0.5)   # = JS Math.round (mapping)
     return 0x01
 
 
