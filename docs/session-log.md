@@ -340,3 +340,19 @@ Offen → siehe `docs/BRIEFING-next-session.md`.
   Ladekringel (MIDI-Anzeige wird in diesem Modus ignoriert).
 - Offen: Schritt 2 (HID-Display aus der Brücke), snd-virmidi dauerhaft laden (`/etc/modules-load.d`, Freigabe
   nötig), systemd-Dienst statt `ddj1000-unlock@`, Mixxx-Jog-MIDI-Ausgabe abschalten (unnötige Last).
+
+## 2026-11-09 (19:10–19:30) – Reboot-Test Autostart bestanden, rpi4 in main gemergt
+
+- Erwartete Sequenz nach Reboot: `ddj1000-module-check` ok → snd-virmidi Karte 7 → udev startet
+  `ddj1000-bridge@midiC3D0` → 1. Unlock scheitert, 2. nach 2 s `15 02 ACK` → `/run/ddj1000/unlocked` →
+  `mixxx-after-ddj1000` startet Mixxx auf „VirMIDI 7-0“ (Mapping DDJ-1000, Skin Pioneered-4Deck).
+- Echt: genau so (Journal `-t ddj1000-bridge`), `Implicit Feedback Mode: Yes`, Playback Running,
+  Track-Uploads mit Waveform/Beatgrid/Hot Cues auf die Jog-Displays. User: Hardware „alles ok“.
+- Unkritisch: 32× „VirMIDI 7-0 not open for output“ beim Mapping-Init (gleich mit direktem Port, ältere
+  Logs); udev-Warnungen aus Alt-Regeln außerhalb des Repos (`/etc/udev/rules.d/99-ddj1000.rules` Tippfehler
+  `ATTRES`, `91-ddj1000.rules` setzt `ATTR{id}` auf jedem Unterknoten).
+- Cherry-Pick der Autostart-Commits nach `main` scheiterte (Pi-Schicht des Forks fehlte) → User-Entscheidung:
+  `rpi4` in `main` mergen. Konflikte nur durch doppelte Cherry-Picks; `main` hatte nichts Eigenes →
+  `rpi4`-Fassung übernommen, `DDJ-1000test.midi.xml` entfällt. Baum `main` = `rpi4`, `validate-repo.py` grün.
+- Nächster Schritt: User pusht `rpi4`; danach Alt-udev-Regeln aufräumen (Freigabe), Langzeittest > 1 h,
+  offene Display-Punkte (Deck-Umschaltung 1↔3/2↔4, Beat FX).
