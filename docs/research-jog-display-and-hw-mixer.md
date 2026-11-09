@@ -175,6 +175,18 @@ Kein libusb und kein Claim an Interface 0 nötig. Skripte: `scripts/dev/display-
 - Noch nicht gemacht: Heartbeat `50 01` (5 Hz) + Unlock-Handshake **in derselben Sitzung** vor dem Upload, wie
   rekordbox es tut. Risiko: ersetzt die Unlock-Sitzung des Dienstes (Audio weg, falls der Handshake scheitert →
   `ddj1000-unlock.service` neu starten bzw. DDJ aus/an).
+- **Stufe 3 – ERFOLG** (Mixxx beendet, `scripts/dev/display-test/display-stage3.py hw:X,0,0 /dev/hidrawN <dump> 30`):
+  Heartbeat `50 01` alle 200 ms + eigener Unlock-Handshake über einen Rawmidi-FD (1. Versuch scheitert, 2. nach
+  2 s → `15 02`), 0,1 s nach dem ACK Display-Init (`00 0a`, `00 0b 31 00…`, `00 0b 31 5e 50 01…`, `00 0c`,
+  `03 01`), 1 s nach dem ACK der HID-Upload Deck 1 aus dem Mitschnitt, dann `0x21` mit 60 Hz bei laufendem
+  Heartbeat. **User: „ein Track mit allem wie bei rekordbox, sogar farbig“** → das dekodierte Format
+  (Waveform/Beatgrid/Status) wird vom DDJ unter Linux angezeigt.
+  **Voraussetzung:** eine Host-Sitzung mit laufendem Heartbeat bzw. eigenem Unlock. Welcher Teil davon nötig ist
+  (Heartbeat allein, frischer Unlock oder Init kurz nach dem ACK), ist noch offen → einzeln eingrenzen.
+  Folge für die Architektur: Der Display-Dienst muss den Heartbeat halten. Damit startet er selbst die
+  Sitzung, und das passt nicht mehr zu „Unlock-Dienst einmalig, danach ohne Heartbeat“. Einen gemeinsamen
+  Dienst für Unlock + Heartbeat + Display (Rawmidi-FD exklusiv) planen; Mixxx liefert die Daten über eine
+  Schnittstelle (z. B. Datei/Socket aus dem Controller-Script).
 
 ## Quellen
 - Upstream [jan0803/ddj1000-linux-driver](https://github.com/jan0803/ddj1000-linux-driver) (`origin/main`)

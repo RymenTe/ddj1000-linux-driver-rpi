@@ -30,6 +30,13 @@ Erledigt 2026-11-08 nachmittags: PAD FX1 (rekordbox-Standard), Loops/Beat Loop a
 7. Wenn stabil: `DDJ-1000test` → `DDJ-1000` übernehmen und im Repo nachziehen; `rpi4` aktualisieren, User pusht.
 8. Aus 2026-11-07: Langzeittest > 1 h, Reboot-Test der Kette, Install-Skripte (uncommittete Änderungen klären).
 
+## Jog-Display-Waveform (Stand 2026-11-09: Replay aus Mitschnitt funktioniert)
+- `scripts/dev/display-test/display-stage3.py` zeigt den rekordbox-Track farbig auf Deck 1 (Mixxx vorher beenden!).
+- Format: `docs/research-jog-display-and-hw-mixer.md` (Abschnitte „Zweiter Mitschnitt“ und „Display-Test“).
+- Offen: (a) Minimalbedingung eingrenzen (Heartbeat allein? frischer Unlock?), (b) Generator: eigene Waveform/
+  Beatgrid/Status aus Mixxx-Daten, (c) Dienst, der den Rawmidi-FD für Unlock + Heartbeat + Display hält, während
+  Mixxx nur über ALSA-Seq liest/schreibt (Konflikt Rawmidi-exklusiv prüfen!).
+
 ## Spätere Verbesserungen („All-in-One“, macht der User später)
 - **Waveform/Cover auf den Jog-Displays**: nur im HID-Modus (proprietär). Erster Mitschnitt liegt in `~/ddj1000-captures/` (ausgewertet, Struktur bekannt, aber ohne Track); nötig: weiterer USBPcap-Mitschnitt mit geladenem Track,
   HID-Reports auf EP 0x06 (64 B) dekodieren. Siehe Recherche-Doku.

@@ -315,3 +315,15 @@ Offen → siehe `docs/BRIEFING-next-session.md`.
   „JogDisplayConnect is not a function“ – letzter Ladevorgang fehlerfrei.
 - User-Test: „geht alles“. Kleine Abweichung der Tempo-%-Anzeige an den Pitch-Enden zwischen Mixxx und Display.
 - `rpi4` per Worktree-Cherry-Pick auf `9ffbf0f` (3 Commits vor `fork/rpi4`), Push durch User.
+
+## 2026-11-09 (13:45–14:30) – Crossfader-Assign, HID-Display dekodiert und unter Linux angezeigt
+
+- Crossfader-Assign-Schalter `9n 16/1D/18` → `orientation` 0/1/2, vom User bestätigt (`674ee3f`).
+- User bestätigt: Browse im Pioneered-Skin, Deck 1/2 gleich belegt, Beat Loop (Shift+Beat Jump).
+- Zweiter rekordbox-Mitschnitt (`~/ddj1000-captures/windows-rekordbox-20261109/`, DDJ = Gerät 7): HID-OUT
+  dekodiert – `0x2c` Waveform (600 × 7 B, RGB565-Paar + 2 Höhen), `0x2f` Beatgrid (ms), `0x30/0x2d` Länge,
+  `0x21` Status (Position, Key). `03 01` = Status-Dump-Anforderung.
+- Display-Test: Stufe 1 (nur hidraw) und Stufe 2 (+ MIDI-Init, ohne Heartbeat) ohne Anzeige; **Stufe 3 (Heartbeat
+  + eigener Unlock + Init + Upload) zeigt den Track farbig wie in rekordbox.**
+- Nächster Schritt: eingrenzen, was nötig ist (Heartbeat vs. frischer Unlock); dann Generator für eigene
+  Tracks (Waveform/Beatgrid aus Mixxx) und Dienst-Architektur (ein Rawmidi-FD für Unlock + Heartbeat + Display).
