@@ -327,3 +327,16 @@ Offen → siehe `docs/BRIEFING-next-session.md`.
   + eigener Unlock + Init + Upload) zeigt den Track farbig wie in rekordbox.**
 - Nächster Schritt: eingrenzen, was nötig ist (Heartbeat vs. frischer Unlock); dann Generator für eigene
   Tracks (Waveform/Beatgrid aus Mixxx) und Dienst-Architektur (ein Rawmidi-FD für Unlock + Heartbeat + Display).
+
+## 2026-11-09 (14:15–15:40) – Mindestbedingung Display, Brückendienst Schritt 1
+
+- T1/T2: rekordbox-Init unnötig; Display braucht dauerhaften Heartbeat (ohne ihn nach ~1 s „Pioneer DJ“).
+- Weg A gewählt (User): `scripts/runtime/ddj1000-bridge.py` – Unlock + Heartbeat + MIDI-Weiterleitung über
+  snd-virmidi (temporär geladen, Karte 7). rtmidi-Variante verworfen (Eingangsthread stirbt beim Mixxx-Start).
+- `python3-rtmidi` per apt installiert (nur noch für Tests genutzt).
+- Mixxx-Konfiguration: Controller „VirMIDI 7-0“ = DDJ-1000test, „DDJ-1000 MIDI 1“ und DDJ-HID aus.
+  Backups `~/.mixxx/mixxx.cfg.backup-20261109-{1424,1534}`.
+- User: Grundfunktionen, LEDs, VU, Pads und Pad-Modus-Wechsel laufen; Jog-Displays zeigen „rekordbox“ +
+  Ladekringel (MIDI-Anzeige wird in diesem Modus ignoriert).
+- Offen: Schritt 2 (HID-Display aus der Brücke), snd-virmidi dauerhaft laden (`/etc/modules-load.d`, Freigabe
+  nötig), systemd-Dienst statt `ddj1000-unlock@`, Mixxx-Jog-MIDI-Ausgabe abschalten (unnötige Last).
