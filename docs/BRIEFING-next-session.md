@@ -21,10 +21,8 @@ Erledigt 2026-11-08 nachmittags: PAD FX1 (rekordbox-Standard), Loops/Beat Loop a
 1. Shift+Beat Jump (Beat Loop) Noten `97 60–67` nur angenommen → beim Drücken `grep -a "DDJ-1000 BeatLoop" ~/.mixxx/mixxx.log`.
 2. „Deck 1/2 teilweise nicht synchron belegt“ – mit Loop-Vereinheitlichung evtl. erledigt, beim User nachfragen.
 3. Browse im Pioneered-Skin (Fix eingebaut, ungetestet), siehe Session-Log 2026-11-08 früh.
-4. Jog-Display (2026-11-09 eingebaut, **am Gerät ungetestet**): Tempo `Bn 16/36` (Vorzeichen-Fix), Cue-Marker
-   `Bn 17/37`, Key `9n 49/4A`, Sync `9n 59/5A`. Prüfen: Pitch-Fader ± → Vorzeichen der %-Anzeige; Key passt zur
-   Mixxx-Anzeige; Cue setzen → Marker am Ring; Sync/Shift+Sync → Anzeige. Positionsbalken springt nicht mehr
-   jede Minute um 180°. Backup: `~/.mixxx/controllers/Pioneer-DDJ_1000-scriptsV0_9_9.js.backup-20261109-1327`.
+4. ~~Jog-Display~~ erledigt 2026-11-09 (Cue-Marker, Key, Sync, Tempo-Vorzeichen; User: „geht alles“). Rest: an den
+   Pitch-Enden teils kleine Abweichung Mixxx ↔ Display (Display 0,1 %, Mixxx 0,01 % – vermutlich Rundung).
 5. Noch unbelegt: Kopfhörer-Mix/-Level, Sampler-Vol, BEAT ◀ ▶ (wirken auf Hardware-Beat-FX), Sampler-Pads, SLIP,
    CUE/LOOP MEMORY/CALL, Kanalfader 14 bit.
 6. Temporäre Diagnose entfernen, wenn alles passt: `colorFxDump`/`colorFxKnobWatch`, `PadFX`-, `BeatLoop`-Print,
