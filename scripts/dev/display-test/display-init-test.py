@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # usage: display-init-test.py <midi-port hw:X,0,0> <hidraw> <dump.txt> <hold_s>
 # Stage 2: rekordbox display-init SysEx (no heartbeat, no unlock) via ONE rawmidi FD, then HID replay deck 1.
 import os, sys, time, select, subprocess

@@ -1,0 +1,10 @@
+#!/bin/sh
+# DDJ-1000: rebuild the patched snd-usb-audio for a newly installed kernel.
+# Installed to /etc/kernel/postinst.d and /etc/kernel/header_postinst.d (headers may arrive after the
+# image in the same apt run). Never fails the package installation.
+version="$1"
+[ -n "$version" ] || exit 0
+/usr/local/lib/ddj1000-linux-driver/scripts/ddj1000-kernel-rebuild.sh "$version" \
+    >>/var/log/ddj1000-kernel-rebuild.log 2>&1 || \
+    echo "DDJ-1000: module rebuild for $version failed, see /var/log/ddj1000-kernel-rebuild.log" >&2
+exit 0

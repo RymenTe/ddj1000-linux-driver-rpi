@@ -49,6 +49,14 @@ def check_required_files() -> list[str]:
         REPO_ROOT / "scripts" / "runtime" / "ddj1000-usb-probe.py",
         REPO_ROOT / "scripts" / "runtime" / "ddj1000-audio-stream.py",
         REPO_ROOT / "patches" / "linux" / "snd-usb-audio-ddj1000-composite-quirk.patch",
+        REPO_ROOT / "patches" / "linux" / "rpi" / "snd-usb-audio-ddj1000-rpi-6.12.patch",
+        REPO_ROOT / "patches" / "linux" / "rpi" / "snd-usb-audio-ddj1000-rpi-6.18.patch",
+        REPO_ROOT / "config" / "systemd" / "system" / "ddj1000-unlock.service",
+        REPO_ROOT / "docs" / "raspberry-pi.md",
+        REPO_ROOT / "docs" / "setup-guide.md",
+        REPO_ROOT / "docs" / "mixxx-pi-gen.md",
+        REPO_ROOT / "scripts" / "install-mixxx-pi-gen-integration.sh",
+        REPO_ROOT / "scripts" / "runtime" / "mixxx-after-ddj1000.sh",
         REPO_ROOT / ".github" / "workflows" / "static-checks.yml",
     ]
     failures: list[str] = []

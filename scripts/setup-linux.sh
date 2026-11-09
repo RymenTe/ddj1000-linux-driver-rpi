@@ -31,6 +31,33 @@ packages=(
     x11-xserver-utils
 )
 
+# Raspberry Pi OS (headless MixxxPi-style setups): only what the driver build
+# and the unlock service need. The X11/Wayland dev libraries above are not.
+rpi_packages=(
+    build-essential
+    bc
+    bison
+    flex
+    libssl-dev
+    git
+    patch
+    python3
+    alsa-utils
+    libusb-1.0-0
+    "linux-headers-$(uname -r)"
+)
+
+is_raspberry_pi() {
+    if [[ -r /proc/device-tree/model ]] && tr -d '\0' < /proc/device-tree/model | grep -q "Raspberry Pi"; then
+        return 0
+    fi
+    [[ "$(uname -r)" == *rpt* || "$(uname -r)" == *rpi* ]]
+}
+
+if is_raspberry_pi; then
+    packages=("${rpi_packages[@]}")
+fi
+
 usage() {
     cat <<'EOF'
 Usage: ./scripts/setup-linux.sh <command>
@@ -122,6 +149,11 @@ install_host_stack_packages() {
     fi
 
     run_privileged apt-get update
+    if is_raspberry_pi; then
+        echo "[INFO] Raspberry Pi: no desktop sink packages needed; Mixxx talks to ALSA directly."
+        run_privileged apt-get install -y alsa-utils
+        return
+    fi
     run_privileged apt-get install -y alsa-utils pulseaudio-utils
 }
 
@@ -139,6 +171,14 @@ install_udev_rule() {
     echo "Die DDJ-1000-HID-Regel ist installiert."
     echo "Wenn der Controller bereits angeschlossen ist: einmal abziehen und wieder anstecken."
     echo
+}
+
+check_kernel_cmdline() {
+    if grep -q "snd_usb_audio.lowlatency=0" /proc/cmdline 2>/dev/null; then
+        print_status "Kernel cmdline" "snd_usb_audio.lowlatency=0 gesetzt - bricht DDJ-1000-Erkennung, entfernen!"
+    else
+        print_status "Kernel cmdline" "ok"
+    fi
 }
 
 check_udev_rule() {
@@ -244,7 +284,11 @@ run_check() {
     echo "DDJ1000 Linux Setup Check"
     echo "Repo: $repo_root"
     echo
+    if is_raspberry_pi; then
+        print_status "Plattform" "Raspberry Pi ($(uname -r))"
+    fi
     check_packages
+    check_kernel_cmdline
     check_udev_rule
     check_groups
     check_hid_access

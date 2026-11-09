@@ -1,0 +1,4 @@
+# DDJ-1000: start the bridge (unlock + heartbeat + MIDI for Mixxx via snd-virmidi + jog displays) once the
+# rawmidi node of the patched snd-usb-audio appears. %k = kernel name (e.g. midiC3D0) -> service instance,
+# so the card number is never hard-coded. Alternative without bridge: 92-ddj1000-unlock.rules.
+ACTION=="add", SUBSYSTEM=="sound", KERNEL=="midiC*D0", ATTRS{idVendor}=="2b73", ATTRS{idProduct}=="0020", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ddj1000-bridge@%k.service"

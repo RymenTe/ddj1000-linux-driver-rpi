@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Look up the track loaded in Mixxx and build jog-display data from Mixxx's own analysis.
 
 - track: matched in ~/.mixxx/mixxxdb.sqlite (read-only) by duration and file BPM, which the mapping

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # usage: hid-replay.py <dump.txt> <hidraw> <deck-prefix 10/20> <t_from> <t_to> <hold_seconds>
 # Replays HID-OUT reports of one deck from a usbpcap dump with original timing; then repeats the
 # last 0x21 status report at ~60 Hz for hold_seconds. Only writes to hidraw (EP 0x06), no MIDI.

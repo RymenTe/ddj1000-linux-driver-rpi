@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import sys, struct, collections
 f=open(sys.argv[1],'rb').read(); off=0; lts={}; i=0; out=[]; inn=collections.Counter(); t0=None
 while off+12<=len(f):

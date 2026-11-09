@@ -1,0 +1,13 @@
+[Unit]
+Description=DDJ-1000: make sure the patched snd-usb-audio exists for the running kernel
+# Safety net for the kernel hooks: e.g. the headers were missing or there was no network during the update.
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c '/usr/local/lib/ddj1000-linux-driver/scripts/ddj1000-kernel-rebuild.sh "$(uname -r)" --load >>/var/log/ddj1000-kernel-rebuild.log 2>&1'
+TimeoutStartSec=30min
+
+[Install]
+WantedBy=multi-user.target

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """DDJ-1000 jog display HID reports (EP 0x06, 64 B), decoded from rekordbox captures.
 
 See docs/research-jog-display-and-hw-mixer.md ("Zweiter Mitschnitt"). Report layout:

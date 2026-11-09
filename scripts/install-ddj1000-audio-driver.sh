@@ -14,6 +14,7 @@ kernel_version="$(uname -r)"
 target_dir="/lib/modules/$kernel_version/updates/ddj1000-linux-driver"
 audio_target="$target_dir/snd-usb-audio.ko"
 midi_target="$target_dir/snd-usbmidi-lib.ko"
+depmod_conf="/etc/depmod.d/ddj1000-linux-driver.conf"
 
 have_command() {
     command -v "$1" >/dev/null 2>&1
@@ -68,6 +69,14 @@ install_driver() {
     run_privileged install -d "$target_dir"
     run_privileged install -m 0644 "$audio_source" "$audio_target"
     run_privileged install -m 0644 "$midi_source" "$midi_target"
+    # Make the override explicit. Raspberry Pi OS ships the stock modules as
+    # .ko.xz under kernel/; this pins modprobe to our copies regardless of the
+    # distro's depmod search order.
+    {
+        for name in snd_usb_audio snd-usb-audio snd_usbmidi_lib snd-usbmidi-lib; do
+            printf 'override %s %s updates/ddj1000-linux-driver\n' "$name" "$kernel_version"
+        done
+    } | run_privileged tee "$depmod_conf" >/dev/null
     run_privileged depmod -a "$kernel_version"
 
     reload_modules || true
@@ -88,6 +97,7 @@ uninstall_driver() {
     run_privileged modprobe -r snd_usb_audio snd_usbmidi_lib || true
     run_privileged rm -f "$audio_target" "$midi_target"
     run_privileged rmdir "$target_dir" 2>/dev/null || true
+    run_privileged rm -f "$depmod_conf"
     run_privileged depmod -a "$kernel_version"
     run_privileged modprobe snd_usb_audio || true
 
@@ -110,6 +120,9 @@ status() {
     printf '%-22s %s\n' "Installed audio module" "$( [[ -f "$audio_target" ]] && echo installed || echo missing )"
     printf '%-22s %s\n' "Installed MIDI module" "$( [[ -f "$midi_target" ]] && echo installed || echo missing )"
     printf '%-22s %s\n' "Active snd_usb_audio" "${active_path:-unknown}"
+    if grep -q "snd_usb_audio.lowlatency=0" /proc/cmdline 2>/dev/null; then
+        echo "[WARN] snd_usb_audio.lowlatency=0 is on the kernel cmdline; it breaks DDJ-1000 detection. Remove it."
+    fi
     show_mok_status
 }
 
