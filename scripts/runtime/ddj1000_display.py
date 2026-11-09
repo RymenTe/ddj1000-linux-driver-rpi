@@ -107,6 +107,42 @@ def track_upload(deck, length_ms, beats, waveform=None, cues=None):
     return reps
 
 
+# Hot-cue colour byte = index on a hue wheel (device photos 2026-11-09): code -> approx. hue in degrees,
+# unwrapped downwards from blue (01 blue, 0C turquoise, 12 blue-green, 16 green, 1A yellow-green, 1E yellow,
+# 24 orange, 2A red, 30 pink, 36 magenta-pink, 3C lavender). Hues are estimates from photos.
+CUE_HUE_ANCHORS = ((230, 0x01), (175, 0x0C), (160, 0x12), (120, 0x16), (85, 0x1A), (60, 0x1E),
+                   (35, 0x24), (0, 0x2A), (-30, 0x30), (-45, 0x36), (-80, 0x3C))
+CUE_COLOUR_DEFAULT = 0x16   # green, as rekordbox uses for hot cues
+
+
+def cue_colour(rgb):
+    """Mixxx hot-cue colour (0xRRGGBB) -> DDJ colour code via hue, linear between the anchors."""
+    import colorsys
+    r, g, b = ((rgb >> 16) & 0xFF) / 255.0, ((rgb >> 8) & 0xFF) / 255.0, (rgb & 0xFF) / 255.0
+    h, s, v = colorsys.rgb_to_hsv(r, g, b)
+    if s < 0.15 or v < 0.1:
+        return CUE_COLOUR_DEFAULT
+    hue = h * 360.0
+    if hue > 230.0:
+        hue -= 360.0
+        if hue < -80.0:   # between lavender (280) and blue (230): nearest end
+            return 0x01 if hue < -105.0 else 0x3C
+    for (h1, c1), (h2, c2) in zip(CUE_HUE_ANCHORS, CUE_HUE_ANCHORS[1:]):
+        if h2 <= hue <= h1:
+            return int(round(c1 + (c2 - c1) * (h1 - hue) / (h1 - h2)))
+    return 0x01
+
+
+def hotcue_reports(deck, length_ms, cues):
+    """30 01 (length + 8 slots A-H [type][colour][mm][ss][ms16]) + empty 30 02. The pair alone updates
+    the markers live; 30 01 without 30 02 clears them (device tests 2026-11-09).
+    cues: list of 8 entries, None or (type, colour code, position ms)."""
+    payload = bytearray(length_field(length_ms))
+    for c in (list(cues) + [None] * 8)[:8]:
+        payload += bytes(6) if c is None else bytes([c[0] & 0xFF, c[1] & 0xFF]) + length_field(c[2])
+    return [single(deck, 0x30, bytes(payload), index=1, count=2), single(deck, 0x30, index=2, count=2)]
+
+
 def bpm_field(bpm):
     """bytes 21-22 / 38-39: integer BPM, then tenths in the high nibble (0x9f 0x00 = 159.0,
     0x95 0x60 = 149.6) - confirmed on the device for the integer part, tenths assumed."""

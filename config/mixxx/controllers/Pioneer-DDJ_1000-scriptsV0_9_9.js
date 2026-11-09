@@ -1586,6 +1586,37 @@ PioneerDDJ1000.bridgeSendState = function() {
         msg.push(0xF7);
         midi.sendSysexMsg(msg, msg.length);
     }
+    PioneerDDJ1000.bridgeSendCues();
+};
+
+// 2026-11-09: hot cues 1-8 per deck for the jog displays (bridge sends HID 30 01/30 02), only on change
+// and every 2 s as a refresh: F0 7D 44 42 02 deck { status type pos_ms:4 rgb:4 } x8 F7
+// status 0 = none, type = Mixxx hotcue_X_type (1 hot cue, 4 loop).
+PioneerDDJ1000.bridgeCueCache = ["", "", "", ""];
+PioneerDDJ1000.bridgeCueTick = 0;
+
+PioneerDDJ1000.bridgeSendCues = function() {
+    var refresh = (++PioneerDDJ1000.bridgeCueTick % 40) === 0;
+    for (var d = 1; d <= 4; d++) {
+        var g = "[Channel" + d + "]";
+        var rate = engine.getValue(g, "track_samplerate");
+        var msg = [0xF0, 0x7D, 0x44, 0x42, 0x02, d - 1];
+        for (var i = 1; i <= 8; i++) {
+            var status = engine.getValue(g, "hotcue_" + i + "_status");
+            var pos = engine.getValue(g, "hotcue_" + i + "_position");
+            var set = status > 0 && pos >= 0 && rate > 0;
+            msg.push(set ? 1 : 0);
+            msg.push(set ? Math.max(0, Math.min(127, engine.getValue(g, "hotcue_" + i + "_type"))) : 0);
+            PioneerDDJ1000.bridgeEnc(msg, set ? pos / (rate * 2) * 1000 : 0, 4);
+            PioneerDDJ1000.bridgeEnc(msg, set ? engine.getValue(g, "hotcue_" + i + "_color") : 0, 4);
+        }
+        msg.push(0xF7);
+        var key = msg.join(",");
+        if (refresh || key !== PioneerDDJ1000.bridgeCueCache[d - 1]) {
+            PioneerDDJ1000.bridgeCueCache[d - 1] = key;
+            midi.sendSysexMsg(msg, msg.length);
+        }
+    }
 };
 
 PioneerDDJ1000.bridgeStateStart = function() {

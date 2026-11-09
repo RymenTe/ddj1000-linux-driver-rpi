@@ -4,6 +4,8 @@ The Mixxx mapping sends one SysEx per deck about 20x/s (never forwarded to the D
   F0 7D 44 42 01 <deck 0-3> <flags> <pos ms:4> <len ms:4> <file bpm*100:3> <bpm*100:3>
      <tempo*100 + 2^20:3> <key 0-24 (Mixxx)> <key shift + 12> <first beat ms:3> F7
   numbers as little-endian 7-bit groups; flags bit0 loaded, bit1 playing, bit2 sync leader, bit3 sync on.
+Hot cues 1-8 (on change and every 2 s):
+  F0 7D 44 42 02 <deck 0-3> { <status 0/1> <Mixxx hotcue type> <pos ms:4> <rgb:4> } x8 F7
 """
 
 import os
@@ -54,6 +56,22 @@ def parse_state(msg):
             "t": time.monotonic()}
 
 
+def parse_cues(msg):
+    """-> (deck 1-4, [None | (DDJ type, colour code, position ms)] x8) or None."""
+    if not msg.startswith(SYSEX_PREFIX) or len(msg) < 6 + 8 * 10 + 1 or msg[4] != 0x02:
+        return None
+    deck = msg[5] + 1
+    p = 6
+    cues = []
+    for _ in range(8):
+        status, mtype = msg[p], msg[p + 1]
+        pos, p = dec7(msg, p + 2, 4)
+        rgb, p = dec7(msg, p, 4)
+        # Mixxx type 4 = saved loop -> 02 (rekordbox capture: loop slot has type 02)
+        cues.append((0x02 if mtype == 4 else 0x01, d.cue_colour(rgb), float(pos)) if status else None)
+    return deck, cues
+
+
 class DisplayManager:
     def __init__(self, log, rate_hz=30.0):
         self.log = log
@@ -67,11 +85,19 @@ class DisplayManager:
         self.stats = {"state_msgs": 0, "uploads": 0, "status_reports": 0, "hid_errors": 0}
         self.tracks = mt.TrackLookup(log)
         self.retry = {}   # deck -> (next try, give up at) while the waveform is missing
+        self.cues = {}         # deck -> latest hot-cue list from Mixxx
+        self.cues_sent = {}    # deck -> (length, cues) last sent to the DDJ
+        self.stats["cue_updates"] = 0
 
     def on_sysex(self, msg):
         st = parse_state(msg)
         if st is None:
-            return False
+            cu = parse_cues(msg)
+            if cu is None:
+                return False
+            with self.lock:
+                self.cues[cu[0]] = cu[1]
+            return True
         with self.lock:
             self.states[st["deck"]] = st
         self.stats["state_msgs"] += 1
@@ -112,6 +138,7 @@ class DisplayManager:
             self.write(rep)
             time.sleep(0.001)
         self.stats["uploads"] += 1
+        self.cues_sent.pop(st["deck"], None)   # the upload's 30 01 has no cues -> send them again
         what = (f"'{info['title']}' (id {info['id']}, {info['matches']} match(es), "
                 f"waveform {'yes' if waveform else 'no'}, beatmap {'yes' if info['beats'] else 'no'})"
                 if info else "not found in Mixxx DB (constant grid, no waveform)")
@@ -132,6 +159,7 @@ class DisplayManager:
             t_next = time.monotonic() + period
             with self.lock:
                 states = dict(self.states)
+                cues = dict(self.cues)
             for deck, st in sorted(states.items()):
                 sig = self.signature(st)
                 if sig != self.uploaded.get(deck):
@@ -150,6 +178,17 @@ class DisplayManager:
                             self.upload(st)
                         else:
                             self.retry[deck] = (now + 2.0, give_up)
+                if sig is not None and deck in cues:
+                    want = (round(st["len"]), tuple(cues[deck]))
+                    if want != self.cues_sent.get(deck):
+                        for rep in d.hotcue_reports(deck, st["len"], cues[deck]):
+                            self.write(rep)
+                            time.sleep(0.001)
+                        self.cues_sent[deck] = want
+                        self.stats["cue_updates"] += 1
+                        text = " ".join(f"{'ABCDEFGH'[i]}={c[2] / 1000:.1f}s/{c[1]:02x}"
+                                        for i, c in enumerate(cues[deck]) if c)
+                        self.log(f"display: deck {deck} hot cues {text or 'none'}")
                 pos = st["pos"]
                 if st["playing"] and st["file_bpm"] > 0:
                     pos += (time.monotonic() - st["t"]) * 1000.0 * (st["bpm"] / st["file_bpm"])
