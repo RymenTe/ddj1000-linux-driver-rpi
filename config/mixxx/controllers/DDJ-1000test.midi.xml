@@ -4821,6 +4821,126 @@
                     <script-binding />
                 </options>
             </control>
+            <control>
+                <description>Crossfader assign A deck 1 (2026-11-09)</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x90</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader assign THRU deck 1 (2026-11-09)</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x90</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader assign B deck 1 (2026-11-09)</description>
+                <group>[Channel1]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x90</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader assign A deck 2 (2026-11-09)</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x91</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader assign THRU deck 2 (2026-11-09)</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x91</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader assign B deck 2 (2026-11-09)</description>
+                <group>[Channel2]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x91</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader assign A deck 3 (2026-11-09)</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x92</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader assign THRU deck 3 (2026-11-09)</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x92</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader assign B deck 3 (2026-11-09)</description>
+                <group>[Channel3]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x92</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader assign A deck 4 (2026-11-09)</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x93</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader assign THRU deck 4 (2026-11-09)</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x93</status>
+                <midino>0x1D</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
+            <control>
+                <description>Crossfader assign B deck 4 (2026-11-09)</description>
+                <group>[Channel4]</group>
+                <key>PioneerDDJ1000.crossfaderAssign</key>
+                <status>0x93</status>
+                <midino>0x18</midino>
+                <options>
+                    <script-binding/>
+                </options>
+            </control>
         </controls>
         <outputs>
             <output>
