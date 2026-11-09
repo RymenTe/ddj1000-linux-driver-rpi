@@ -1632,3 +1632,99 @@ PioneerDDJ1000.bridgeStateStart = function() {
     }
     PioneerDDJ1000.bridgeStateTimer = engine.beginTimer(50, PioneerDDJ1000.bridgeSendState);
 };
+
+// ---------------------------------------------------------------------------------------------------------------
+// 2026-11-09: hot-cue pads light up in the Mixxx hot-cue colour. The DDJ colour code is a hue-wheel index
+// (01 blue ... 16 green, 1E yellow, 24 orange, 2A red, 30 pink, 3C lavender), measured on the jog display;
+// same table as cue_colour() in scripts/runtime/ddj1000_display.py. Replaces the fixed HC_Color and fixes
+// deck 4 hot-cue LEDs (were sent to the deck 3 pads).
+// ---------------------------------------------------------------------------------------------------------------
+PioneerDDJ1000.cueHueAnchors = [[230, 0x01], [175, 0x0C], [160, 0x12], [120, 0x16], [85, 0x1A], [60, 0x1E],
+                                [35, 0x24], [0, 0x2A], [-30, 0x30], [-45, 0x36], [-80, 0x3C]];
+PioneerDDJ1000.cueColourDefault = 0x16;
+
+PioneerDDJ1000.cueColourCode = function(rgb) {
+    if (rgb === undefined || rgb < 0) {
+        return PioneerDDJ1000.cueColourDefault;
+    }
+    var r = ((rgb >> 16) & 0xFF) / 255, g = ((rgb >> 8) & 0xFF) / 255, b = (rgb & 0xFF) / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b), delta = max - min;
+    if (max < 0.1 || delta / max < 0.15) {
+        return PioneerDDJ1000.cueColourDefault;
+    }
+    var hue;
+    if (max === r) {
+        hue = 60 * (((g - b) / delta) % 6);
+    } else if (max === g) {
+        hue = 60 * ((b - r) / delta + 2);
+    } else {
+        hue = 60 * ((r - g) / delta + 4);
+    }
+    if (hue < 0) { hue += 360; }
+    if (hue > 230) {
+        hue -= 360;
+        if (hue < -80) { return hue < -105 ? 0x01 : 0x3C; }
+    }
+    var a = PioneerDDJ1000.cueHueAnchors;
+    for (var i = 0; i + 1 < a.length; i++) {
+        if (hue <= a[i][0] && hue >= a[i + 1][0]) {
+            return Math.round(a[i][1] + (a[i + 1][1] - a[i][1]) * (a[i][0] - hue) / (a[i][0] - a[i + 1][0]));
+        }
+    }
+    return 0x01;
+};
+
+PioneerDDJ1000.hotcuePadPorts = [HcCH1Port, HcCH2Port, HcCH3Port, HcCH4Port];
+
+PioneerDDJ1000.hotcuePadColour = function(deck, n) {
+    var g = "[Channel" + deck + "]";
+    if (engine.getValue(g, "hotcue_" + n + "_status") <= 0) {
+        return Black;
+    }
+    return PioneerDDJ1000.cueColourCode(engine.getValue(g, "hotcue_" + n + "_color"));
+};
+
+PioneerDDJ1000.hotcueLed = function(deck, n) {
+    var port = PioneerDDJ1000.hotcuePadPorts[deck - 1];
+    var c = PioneerDDJ1000.hotcuePadColour(deck, n);
+    midi.sendShortMsg(port, n - 1, c);
+    midi.sendShortMsg(port + 1, n - 1, c); // shift page
+};
+
+(function() {
+    for (var d = 1; d <= 4; d++) {
+        for (var n = 1; n <= 8; n++) {
+            PioneerDDJ1000["HotCue" + n + "TriggerCH" + d] = (function(deck, num) {
+                return function() { PioneerDDJ1000.hotcueLed(deck, num); };
+            })(d, n);
+        }
+    }
+})();
+
+PioneerDDJ1000.hotcueTriggerInitOrig = PioneerDDJ1000.HotCueTriggerInit;
+PioneerDDJ1000.HotCueTriggerInit = function() {
+    PioneerDDJ1000.hotcueTriggerInitOrig();
+    PioneerDDJ1000.hotcueColourConns = [];
+    for (var d = 1; d <= 4; d++) {
+        for (var n = 1; n <= 8; n++) {
+            PioneerDDJ1000.hotcueColourConns.push(engine.makeConnection("[Channel" + d + "]", "hotcue_" + n + "_color",
+                (function(deck, num) { return function() { PioneerDDJ1000.hotcueLed(deck, num); }; })(d, n)));
+            PioneerDDJ1000.hotcueLed(d, n);
+        }
+    }
+};
+
+// press dims the pad (as before), release restores the hot-cue colour instead of the fixed HC_Color
+PioneerDDJ1000.HotCueTouch = function(channel, control, value, status, group) {
+    var n = control + 1;
+    if (control > 7 || engine.getValue(group, "hotcue_" + n + "_status") <= 0) {
+        return;
+    }
+    var port = 0x90 | (status & 0x0F); // the DDJ sends real note-offs (8x) on release
+    if (value === 0x7F && (status & 0xF0) === 0x90) {
+        midi.sendShortMsg(port, control, HC_dimmedColor);
+    } else {
+        var deck = parseInt(group.substring(8, 9), 10);
+        midi.sendShortMsg(port, control, PioneerDDJ1000.hotcuePadColour(deck, n));
+    }
+};
