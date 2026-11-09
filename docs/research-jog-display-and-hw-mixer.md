@@ -267,7 +267,12 @@ bernstein, Höhen weiß), dunkle/helle Variante als Farbpaar. Suche ~70 ms.
   **H grün**. Marker auf der Übersicht und auf dem Beat-Lineal (Einheit = Takte) an der richtigen Stelle.
 - `0x21` (aus dem Mitschnitt, noch nicht am Gerät getestet): Byte 25–27 / 28–30 = aktiver Loop Start/Ende in ms (u24 LE,
   4:11,600–4:14,800); Byte 55–57 = nächster Cue in ms (u24 LE), 58 = Typ?, 59 = Farbe.
-- Offen: Farbcode-Tabelle (bekannt: `01` blau, `16` grün, `24` orange), Loop-Darstellung über `0x21`, Memory Cues/Haupt-Cue.
+- **Live-Update:** `30 01` allein löscht alle Marker; **`30 01` + leeres `30 02`** setzt sie neu – ohne Waveform-/
+  Beatgrid-Upload (Gerätetest `cue30-test.py --only30 --with3002`).
+- **Farbcode = Farbkreis-Index** (alle getesteten Codes `01`–`3C` gültig, Fotos 2026-11-09): `01`–`09` blau→cyan,
+  `0C` türkis, `12` blaugrün, `16` grün, `1A` gelbgrün, `1E` gelb, `24` orange, `2A` rot, `30` rosa, `36` magenta-rosa,
+  `3C` lavendel. Für Mixxx: RGB → Farbton → nächster Code (Stützpunkte oben).
+- Offen: Loop-Darstellung über `0x21`, Memory Cues/Haupt-Cue, Typ `02`.
 
 ## Quellen
 - Upstream [jan0803/ddj1000-linux-driver](https://github.com/jan0803/ddj1000-linux-driver) (`origin/main`)

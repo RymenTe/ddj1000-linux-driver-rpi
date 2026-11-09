@@ -22,6 +22,8 @@ ap.add_argument("--length-ms", type=float, required=True)
 ap.add_argument("--bpm", type=float, required=True)
 ap.add_argument("--cues", default="01:16:30,01:01:60,01:24:90,02:24:120")
 ap.add_argument("--main", default="01:16:10", help="entry at byte 52, '' = none")
+ap.add_argument("--only30", action="store_true", help="send only the 30 01 report (live update test)")
+ap.add_argument("--with3002", action="store_true", help="with --only30: follow 30 01 by an empty 30 02")
 a = ap.parse_args()
 info = mt.TrackLookup(print).find(a.length_ms, a.bpm)
 if not info:
@@ -33,6 +35,10 @@ if a.main:
 reps = d.track_upload(a.deck, a.length_ms, info["beats"], info["waveform"])
 lf_only = d.single(a.deck, 0x30, d.length_field(a.length_ms), index=1, count=2)
 reps = [d.single(a.deck, 0x30, bytes(payload), index=1, count=2) if r == lf_only else r for r in reps]
+if a.only30:
+    reps = [d.single(a.deck, 0x30, bytes(payload), index=1, count=2)]
+    if a.with3002:
+        reps.append(d.single(a.deck, 0x30, index=2, count=2))
 fd = os.open(d.find_hidraw(), os.O_WRONLY)
 for r in reps:
     os.write(fd, b"\0" + r); time.sleep(0.001)
