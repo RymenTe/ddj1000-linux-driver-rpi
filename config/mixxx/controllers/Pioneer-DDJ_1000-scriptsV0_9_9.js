@@ -1546,7 +1546,8 @@ PioneerDDJ1000.bridgeMode = true;
 
 // 2026-11-09: deck state for the DDJ-1000 bridge (scripts/runtime/ddj1000-bridge.py), which drives the
 // jog displays via HID. One SysEx per deck every 50 ms; the bridge consumes it (never reaches the DDJ):
-// F0 7D 44 42 01 deck flags pos:4 len:4 filebpm*100:3 bpm*100:3 tempo*100+2^20:3 key shift+12 firstbeat:3 F7
+// F0 7D 44 42 01 deck flags pos:4 len:4 filebpm*100:3 bpm*100:3 tempo*100+2^20:3 key shift+12 firstbeat:3
+//    rateRange*100 (6/10/16/25/50/100) F7
 PioneerDDJ1000.bridgeEnc = function(out, value, n) {
     value = Math.max(0, Math.round(value));
     for (var i = 0; i < n; i++) {
@@ -1583,6 +1584,7 @@ PioneerDDJ1000.bridgeSendState = function() {
         msg.push(Math.max(0, Math.min(24, Math.round(engine.getValue(g, "key")))));
         msg.push(shift + 12);
         PioneerDDJ1000.bridgeEnc(msg, firstBeat, 3);
+        msg.push(Math.max(0, Math.min(127, Math.round(engine.getValue(g, "rateRange") * 100))));
         msg.push(0xF7);
         midi.sendSysexMsg(msg, msg.length);
     }
