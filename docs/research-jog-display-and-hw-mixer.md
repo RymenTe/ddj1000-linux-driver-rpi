@@ -191,7 +191,7 @@ Kein libusb und kein Claim an Interface 0 nötig. Skripte: `scripts/dev/display-
   - T1 Deck 2, Heartbeat läuft, eigener Unlock, **ohne** rekordbox-Init (`--no-init`) → Track + Waveform angezeigt.
     Die Init-SysEx (`00 0b 31…`, `03 01`) ist also nicht nötig. Der Unlock-Vorspann (`00 0a/0b 2b 68/0c`) wird trotzdem gesendet.
   - T2 Deck 1, Heartbeat stoppt 0,5 s nach dem ACK (`--hb-stop-after-ack 0.5`), Upload ohne Heartbeat → Track
-    erscheint kurz und **fällt sofort auf „Pioneer DJ“ zurück**. Nach jedem Testende (Heartbeat aus) zeigen
+    erscheint kurz und **fällt nach etwa 1 s auf „Pioneer DJ“ zurück** (User-Angabe). Nach jedem Testende (Heartbeat aus) zeigen
     beide Displays wieder „Pioneer DJ“.
   - **Ergebnis: Die Display-Anzeige braucht einen dauerhaft laufenden Heartbeat.** Ein neu einsetzender Heartbeat
     startet eine neue Sitzung (CLAUDE.md), also gilt: **Unlock + Heartbeat ohne Lücke + HID**, alles im selben
