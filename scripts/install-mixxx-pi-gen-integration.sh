@@ -14,7 +14,7 @@ repo_root="$(cd -- "$script_dir/.." && pwd)"
 
 wrapper_source="$repo_root/scripts/runtime/mixxx-after-ddj1000.sh"
 wrapper_target="/usr/local/bin/mixxx-after-ddj1000"
-session_user="${DDJ1000_SESSION_USER:-pi}"
+session_user="${DDJ1000_SESSION_USER:-${SUDO_USER:-$(id -un)}}"
 
 run_privileged() {
     if [[ "$EUID" -eq 0 ]]; then

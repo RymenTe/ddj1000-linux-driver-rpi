@@ -1061,12 +1061,12 @@ PioneerDDJ1000.BEAT_FX_EFFECT = "[EffectRack1_EffectUnit1_Effect1]";
 // through all Mixxx effects landed on EQs/Autopan/Metronome, which are inaudible on one deck.
 // LEVEL/DEPTH = unit mix (XML). Index = position in effects.xml <ChainPresetList> + 1.
 PioneerDDJ1000.BEAT_FX_LIST = [
-    {name: "ECHO 1/2", index: 13},
-    {name: "ECHO 1/4", index: 12},
-    {name: "ECHO 1/2 LONG", index: 14},
-    {name: "REVERB", index: 15},
-    {name: "FLANGER", index: 16},
-    {name: "FILTER (HPF)", index: 17},
+    {name: "ECHO 1/2", index: 2},
+    {name: "ECHO 1/4", index: 1},
+    {name: "ECHO 1/2 LONG", index: 3},
+    {name: "REVERB", index: 4},
+    {name: "FLANGER", index: 5},
+    {name: "FILTER (HPF)", index: 6},
 ];
 PioneerDDJ1000.beatFxPos = 0;
 PioneerDDJ1000.beatFxOn = false;
@@ -1193,12 +1193,13 @@ PioneerDDJ1000.beatFxChannelSelect = function(channel, control, value, status, g
 // changes them; colorFxInit prints the index of the preset loaded at startup.
 // ============================================================
 PioneerDDJ1000.COLOR_FX_PRESETS = {
-    // Index 0 is the empty preset ("---"); the list from effects.xml starts at 1.
-    // Verified 2026-11-08 by parameter fingerprints in mixxx.log: 3=Loudness, 6=Echoverb HP, 14=Echo.
-    0x00: {name: "Filter Echo", index: 7},   // DUB ECHO
+    // Index 0 is the empty preset ("---"); the list from effects.xml <QuickEffectPresetList> starts at 1.
+    // scripts/install-ddj1000-mixxx.sh puts the own presets "DDJ ColorFX Filter / Filter Echo / White Noise"
+    // first (built-in names are localised, e.g. "Weißes Rauschen", so their positions differ per system).
+    0x00: {name: "DDJ ColorFX Filter Echo", index: 2},   // DUB ECHO
     // 0x01 PITCH: intentionally unassigned (Pitch Shift destabilised audio, 2026-11-08) -> Color FX off
-    0x02: {name: "White Noise", index: 1, bipolar: true},   // NOISE: center silent, both sides noise
-    0x03: {name: "Filter", index: 15},       // FILTER
+    0x02: {name: "DDJ ColorFX White Noise", index: 3, bipolar: true},   // NOISE: center silent, both sides noise
+    0x03: {name: "DDJ ColorFX Filter", index: 1},       // FILTER
 };
 PioneerDDJ1000.COLOR_FX_DEFAULT = 0x03;
 PioneerDDJ1000.colorFxSelected = -1;
@@ -1329,16 +1330,17 @@ PioneerDDJ1000.PAD_FX_UNIT = "[EffectRack1_EffectUnit2]";
 //   5 ECHO 1/4   6 ECHO 1/2   7 REVERB 50   8 ECHO 1/2 (longer tail)
 // Effects use own chain presets "PadFX ..." with FIXED values (no super1/meta links: links did
 // not move the parameters -> reverb stayed at send 0, noise at full). Index = position in
-// effects.xml <ChainPresetList> + 1 ("---" is 0).
+// effects.xml <ChainPresetList> + 1 ("---" is 0). scripts/install-ddj1000-mixxx.sh puts the six
+// PadFX presets first in that list (independent of Mixxx's localised built-in presets).
 PioneerDDJ1000.PAD_FX1_EFFECTS = [
     {name: "Roll 1/2", roll: "0.5"},
-    {name: "Sweep", index: 17},
-    {name: "Flanger 16", index: 16},
+    {name: "Sweep", index: 6},
+    {name: "Flanger 16", index: 5},
     {name: "V.Brake 3/4", brakeBeats: 0.75},
-    {name: "Echo 1/4", index: 12},
-    {name: "Echo 1/2", index: 13},
-    {name: "Reverb 50", index: 15},
-    {name: "Echo 1/2 long", index: 14},
+    {name: "Echo 1/4", index: 1},
+    {name: "Echo 1/2", index: 2},
+    {name: "Reverb 50", index: 4},
+    {name: "Echo 1/2 long", index: 3},
 ];
 PioneerDDJ1000.padFxActive = null;   // {deck, pad, timer}
 PioneerDDJ1000.padFxSetSuper = function(v) {

@@ -84,9 +84,16 @@ git clone -b rpi4 https://github.com/RymenTe/ddj1000-linux-driver-rpi ~/ddj1000-
 cd ~/ddj1000-linux-driver-rpi
 bash scripts/setup-linux.sh all
 bash scripts/dev/prepare-ddj1000-snd-usb-audio-module.sh
-bash scripts/install-ddj1000-linux-stack.sh install
-sudo usermod -aG audio,plugdev "$USER"   # log out and back in afterwards
+# start Mixxx once and close it (creates its settings), then:
+bash scripts/install-ddj1000-linux-stack.sh install   # optional: --no-bridge (unlock only, no jog displays)
+sudo reboot                                          # group changes + snd-virmidi + autostart
 ```
+
+The install step sets up everything that has to run unattended (details: `docs/bridge.md`):
+the bridge starts by itself when the DDJ is plugged in (unlock, heartbeat, jog displays), Mixxx
+gets the mapping on the virtual port **VirMIDI 7-0**, and every kernel update rebuilds the patched
+audio driver automatically. Without a desktop autostart of its own, add
+`bash scripts/install-ddj1000-mixxx.sh install --autostart` (Raspberry Pi OS desktop).
 
 Verify:
 
@@ -94,7 +101,8 @@ Verify:
 bash scripts/install-ddj1000-linux-stack.sh status
 aplay -l | grep DDJ1000          # playback device present
 amidi -l | grep DDJ-1000         # MIDI port present
-ls /run/ddj1000/unlocked         # unlock + rebind finished
+ls /run/ddj1000/unlocked         # DDJ unlocked by the bridge
+systemctl status 'ddj1000-bridge@*'
 ```
 
 The controller display should no longer show `NO AUDIO DRIVER`.
@@ -122,18 +130,21 @@ Channels 5–6 are a third playback pair whose role is not confirmed yet
 
 ### Controller mapping (Preferences → Controllers)
 
-1. Copy the mapping files (`.xml` + `.js`) into Mixxx's controller folder:
-   - apt install: `~/.mixxx/controllers/`
-   - Flatpak: `~/.var/app/org.mixxx.Mixxx/.mixxx/controllers/`
-2. Restart Mixxx, select the DDJ-1000 MIDI device, enable it and load the
-   mapping.
-3. If the device is listed as "USB Device 0x00:0x00", the module from this
-   repository is not loaded yet; check `modinfo -n snd_usb_audio`.
+`scripts/install-ddj1000-mixxx.sh install` (part of the stack install, Mixxx closed) does this:
+controller **VirMIDI 7-0** (the bridge port) with the mapping **DDJ-1000**, the direct
+"DDJ-1000 MIDI 1" and HID entries switched off, PAD FX / Color FX presets, skin
+`Pioneered-4Deck`. Manually: copy `config/mixxx/controllers/*` to `~/.mixxx/controllers/`
+(Flatpak: `~/.var/app/org.mixxx.Mixxx/.mixxx/controllers/`) and select "VirMIDI 7-0" →
+DDJ-1000. PAD FX and Color FX need the preset order the script writes into `effects.xml`.
+
+If the DDJ is listed as "USB Device 0x00:0x00", the module from this repository is not
+loaded yet; check `modinfo -n snd_usb_audio`.
 
 ### Start Mixxx after the unlock
 
-The unlock service rebinds the audio driver after the handshake. Mixxx must
-not hold the device at that moment.
+Mixxx must not open the DDJ audio device before the bridge has unlocked the DDJ
+(the DDJ delivers no audio before that). Start it through
+`/usr/local/bin/mixxx-after-ddj1000`, which waits for `/run/ddj1000/unlocked`.
 
 On the mixxx-pi-gen image the installer sets this up automatically
 (`docs/mixxx-pi-gen.md`). On other setups, copy
