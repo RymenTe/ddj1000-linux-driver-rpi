@@ -303,6 +303,9 @@ var timeTypeCH4 = 0;
 
 		// ------ Cue marker, key, sync on jog (2026-11-09)
 		PioneerDDJ1000.JogDisplayConnect();
+		
+		// ------ Deck state for the bridge / HID jog displays (2026-11-09)
+		PioneerDDJ1000.bridgeStateStart();
 
 		// Timer
 		// ------ End of track blinking
@@ -754,6 +757,7 @@ var timeTypeCH4 = 0;
 	};
 	
 	PioneerDDJ1000.TrackTimeDisplay = function (channel, value, group, timeType) {
+		if (PioneerDDJ1000.bridgeMode) { return; } // 2026-11-09: jog display via bridge/HID, MIDI ignored by the DDJ
 		
 		var midiPort = 0x90 + (channel-1);
 		var trackDuration = engine.getValue(group, "duration"); // get total time
@@ -923,6 +927,7 @@ var timeTypeCH4 = 0;
 	};
 	
 	PioneerDDJ1000.DisplayBpmAndPitchRange = function (channel, value, group) {
+		if (PioneerDDJ1000.bridgeMode) { return; } // 2026-11-09: jog display via bridge/HID
 		
 		var midiPort = 0xB0 + (channel-1);
 		var absoluteBPM = Math.floor(value*10);
@@ -1533,4 +1538,58 @@ PioneerDDJ1000.crossfaderAssign = function(channel, control, value, status, grou
     }
     engine.setValue(group, "orientation", orientation);
     print("DDJ-1000 XfaderAssign: " + group + " note 0x" + control.toString(16) + " -> orientation " + orientation);
+};
+
+// true when running behind scripts/runtime/ddj1000-bridge.py (heartbeat session): the DDJ ignores the
+// MIDI jog display messages then, so the high-rate ones (time/position, BPM/tempo) are not sent.
+PioneerDDJ1000.bridgeMode = true;
+
+// 2026-11-09: deck state for the DDJ-1000 bridge (scripts/runtime/ddj1000-bridge.py), which drives the
+// jog displays via HID. One SysEx per deck every 50 ms; the bridge consumes it (never reaches the DDJ):
+// F0 7D 44 42 01 deck flags pos:4 len:4 filebpm*100:3 bpm*100:3 tempo*100+2^20:3 key shift+12 firstbeat:3 F7
+PioneerDDJ1000.bridgeEnc = function(out, value, n) {
+    value = Math.max(0, Math.round(value));
+    for (var i = 0; i < n; i++) {
+        out.push(value % 128);
+        value = Math.floor(value / 128);
+    }
+};
+
+PioneerDDJ1000.bridgeSendState = function() {
+    for (var d = 1; d <= 4; d++) {
+        var g = "[Channel" + d + "]";
+        var loaded = engine.getValue(g, "track_loaded") > 0;
+        var duration = engine.getValue(g, "duration");
+        var fileBpm = engine.getValue(g, "file_bpm");
+        var bpm = engine.getValue(g, "bpm");
+        var tempo = fileBpm > 0 ? (bpm / fileBpm - 1) * 100 : 0;
+        var firstBeat = 0;
+        var closest = engine.getValue(g, "beat_closest");
+        var rate = engine.getValue(g, "track_samplerate");
+        if (fileBpm > 0 && closest >= 0 && rate > 0) {
+            var beatMs = 60000 / fileBpm;
+            firstBeat = ((closest / (rate * 2)) * 1000) % beatMs;
+        }
+        var flags = (loaded ? 1 : 0) | (engine.getValue(g, "play") > 0 ? 2 : 0) |
+                    (engine.getValue(g, "sync_leader") > 0 ? 4 : 0);
+        var shift = Math.max(-12, Math.min(12, Math.round(engine.getValue(g, "pitch_adjust"))));
+        var msg = [0xF0, 0x7D, 0x44, 0x42, 0x01, d - 1, flags];
+        PioneerDDJ1000.bridgeEnc(msg, engine.getValue(g, "playposition") * duration * 1000, 4);
+        PioneerDDJ1000.bridgeEnc(msg, duration * 1000, 4);
+        PioneerDDJ1000.bridgeEnc(msg, fileBpm * 100, 3);
+        PioneerDDJ1000.bridgeEnc(msg, bpm * 100, 3);
+        PioneerDDJ1000.bridgeEnc(msg, tempo * 100 + 1048576, 3);
+        msg.push(Math.max(0, Math.min(24, Math.round(engine.getValue(g, "key")))));
+        msg.push(shift + 12);
+        PioneerDDJ1000.bridgeEnc(msg, firstBeat, 3);
+        msg.push(0xF7);
+        midi.sendSysexMsg(msg, msg.length);
+    }
+};
+
+PioneerDDJ1000.bridgeStateStart = function() {
+    if (PioneerDDJ1000.bridgeStateTimer) {
+        engine.stopTimer(PioneerDDJ1000.bridgeStateTimer);
+    }
+    PioneerDDJ1000.bridgeStateTimer = engine.beginTimer(50, PioneerDDJ1000.bridgeSendState);
 };
