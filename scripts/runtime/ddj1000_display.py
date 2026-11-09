@@ -85,7 +85,14 @@ def rgb565(r, g, b):
     return v.to_bytes(2, "little")
 
 
-def track_upload(deck, length_ms, beats, waveform=None):
+def cue_entry(position_ms=None, kind=0):
+    """one of the 10 cue slots in 0x2d: assumed [kind][position ms u32 LE]; empty = 00 9e 2f 27 01."""
+    if position_ms is None:
+        return EMPTY_CUE
+    return bytes([kind & 0xFF]) + int(position_ms).to_bytes(4, "little")
+
+
+def track_upload(deck, length_ms, beats, waveform=None, cues=None):
     """Report sequence rekordbox sends on track load: 30 01/02, 2f grid, 30 02/01/02, 2d, 2b, 2c waveform."""
     lf = length_field(length_ms)
     reps = [single(deck, 0x30, index=1, count=2), single(deck, 0x30, index=2, count=2)]
@@ -93,8 +100,8 @@ def track_upload(deck, length_ms, beats, waveform=None):
     reps += [single(deck, 0x30, index=2, count=2),
              single(deck, 0x30, lf, index=1, count=2),
              single(deck, 0x30, index=2, count=2)]
-    cues = lf + bytes([10]) + EMPTY_CUE * 10
-    reps.append(single(deck, 0x2D, cues))
+    slots = (list(cues or []) + [EMPTY_CUE] * 10)[:10]
+    reps.append(single(deck, 0x2D, lf + bytes([10]) + b"".join(slots)))
     reps.append(single(deck, 0x2B))  # 10 2b 01 00 01 (rekordbox sends it before the waveform)
     reps += series(deck, 0x2C, waveform_bytes(waveform or []))
     return reps
