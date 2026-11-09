@@ -33,7 +33,7 @@ Erledigt 2026-11-08 nachmittags: PAD FX1 (rekordbox-Standard), Loops/Beat Loop a
 ## Jog-Display-Waveform (Stand 2026-11-09: Replay aus Mitschnitt funktioniert)
 - `scripts/dev/display-test/display-stage3.py` zeigt den rekordbox-Track farbig auf Deck 1 (Mixxx vorher beenden!).
 - Format: `docs/research-jog-display-and-hw-mixer.md` (Abschnitte „Zweiter Mitschnitt“ und „Display-Test“).
-- Offen: (a) Minimalbedingung eingrenzen (Heartbeat allein? frischer Unlock?), (b) Generator: eigene Waveform/
+- Mindestbedingung geklärt: Unlock + **dauerhafter** Heartbeat + HID; rekordbox-Init unnötig. Offen: (b) Generator: eigene Waveform/
   Beatgrid/Status aus Mixxx-Daten, (c) Dienst, der den Rawmidi-FD für Unlock + Heartbeat + Display hält, während
   Mixxx nur über ALSA-Seq liest/schreibt (Konflikt Rawmidi-exklusiv prüfen!).
 
