@@ -257,6 +257,18 @@ bernstein, Höhen weiß), dunkle/helle Variante als Farbpaar. Suche ~70 ms.
   neuer rekordbox-Mitschnitt mit bekannten Hot Cues/Memory Cue/Loop nötig. Mixxx-Cues stehen in Tabelle `cues`
   (type, position, length, hotcue, label, color).
 
+### Hot Cues auf dem Jog-Display (2026-11-09, Mitschnitt `DDJ1000-Hotcue.pcapng`)
+
+- Die Hot Cues stehen **nicht in `2d`**, sondern in **`30 01`**: Nutzdaten = Länge (`mm ss ms16`) + **8 Plätze à 6 B**
+  `[Typ][Farbe][mm][ss][ms u16 LE]` für **A–H** (Report-Byte 10, 16, … 52). Der Platz bestimmt den Buchstaben,
+  nicht die Zeit (rekordbox: A 3:27,6, B 2:38,8, C 1:32,8, D 3:55,2, E = Typ `02` 4:11,6).
+- Gerätetest (`scripts/dev/display-test/cue30-test.py`, Foto): `01 16` @ 0:30 → **A grün**, `01 01` @ 1:00 → **B blau**,
+  `01 24` @ 1:30 → **C orange**, `02 24` @ 2:00 → **D orange** (sieht aus wie ein Hot Cue), Byte 52 `01 16` @ 0:10 →
+  **H grün**. Marker auf der Übersicht und auf dem Beat-Lineal (Einheit = Takte) an der richtigen Stelle.
+- `0x21` (aus dem Mitschnitt, noch nicht am Gerät getestet): Byte 25–27 / 28–30 = aktiver Loop Start/Ende in ms (u24 LE,
+  4:11,600–4:14,800); Byte 55–57 = nächster Cue in ms (u24 LE), 58 = Typ?, 59 = Farbe.
+- Offen: Farbcode-Tabelle (bekannt: `01` blau, `16` grün, `24` orange), Loop-Darstellung über `0x21`, Memory Cues/Haupt-Cue.
+
 ## Quellen
 - Upstream [jan0803/ddj1000-linux-driver](https://github.com/jan0803/ddj1000-linux-driver) (`origin/main`)
 - [Mixxx-Wiki DDJ-1000](https://github.com/mixxxdj/mixxx/wiki/ddj-1000)
