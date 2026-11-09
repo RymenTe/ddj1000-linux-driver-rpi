@@ -1590,8 +1590,8 @@ PioneerDDJ1000.bridgeSendState = function() {
 };
 
 // 2026-11-09: hot cues 1-8 per deck for the jog displays (bridge sends HID 30 01/30 02), only on change
-// and every 2 s as a refresh: F0 7D 44 42 02 deck { status type pos_ms:4 rgb:4 } x8 F7
-// status 0 = none, type = Mixxx hotcue_X_type (1 hot cue, 4 loop).
+// and every 2 s as a refresh: F0 7D 44 42 02 deck { status type pos_ms:4 rgb:4 } x8 loopflags start_ms:4 end_ms:4 F7
+// status 0 = none, type = Mixxx hotcue_X_type (1 hot cue, 4 loop); loopflags bit0 start set, bit1 end set, bit2 enabled.
 PioneerDDJ1000.bridgeCueCache = ["", "", "", ""];
 PioneerDDJ1000.bridgeCueTick = 0;
 
@@ -1610,6 +1610,13 @@ PioneerDDJ1000.bridgeSendCues = function() {
             PioneerDDJ1000.bridgeEnc(msg, set ? pos / (rate * 2) * 1000 : 0, 4);
             PioneerDDJ1000.bridgeEnc(msg, set ? engine.getValue(g, "hotcue_" + i + "_color") : 0, 4);
         }
+        var ls = engine.getValue(g, "loop_start_position");
+        var le = engine.getValue(g, "loop_end_position");
+        var lsSet = ls >= 0 && rate > 0;
+        var leSet = le >= 0 && rate > 0;
+        msg.push((lsSet ? 1 : 0) | (leSet ? 2 : 0) | (engine.getValue(g, "loop_enabled") > 0 ? 4 : 0));
+        PioneerDDJ1000.bridgeEnc(msg, lsSet ? ls / (rate * 2) * 1000 : 0, 4);
+        PioneerDDJ1000.bridgeEnc(msg, leSet ? le / (rate * 2) * 1000 : 0, 4);
         msg.push(0xF7);
         var key = msg.join(",");
         if (refresh || key !== PioneerDDJ1000.bridgeCueCache[d - 1]) {
