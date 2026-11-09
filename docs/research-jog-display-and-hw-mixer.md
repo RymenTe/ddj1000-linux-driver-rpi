@@ -240,6 +240,23 @@ Mixxx → DDJ von ~1700/s auf ~86/s.
   wirkt nicht, Pad-Farben zum Teil falsch (Sampler kurz grün), Waveform (2b), Performance im Auge behalten (Mini-PC als
   Option).
 
+### Schritt 2b – Waveform aus der Mixxx-Analyse (2026-11-09)
+
+`scripts/runtime/ddj1000_mixxx_track.py`: Track-Suche in `~/.mixxx/mixxxdb.sqlite` (nur lesend) über Länge (±60 ms)
+und Track-BPM (±0,02) aus der Deck-Zustand-SysEx. Waveform aus `~/.mixxx/analysis/<track_analysis.id>`
+(„WaveformSummary-5.0“: 4 Byte Länge + zlib + Protobuf; 1 visual_sample_rate ≈ 5,9 Hz, 2 audio_visual_ratio,
+3 signal_all, 4 gefiltert {1 low, 2 mid, 3 high, 4–6 Filtergrenzen 600/600/4000 Hz}; Werte 0–255 Stereo
+verschachtelt). Beatgrid aus `library.beats` („BeatMap-1.0“: wiederholtes Feld 1 = Beat{1 frame_position}).
+Umrechnung: 600 Punkte, außen = Gesamtsignal, innen = Bass, Farbe aus Bass/Mitten/Höhen (Bass blau, Mitten
+bernstein, Höhen weiß), dunkle/helle Variante als Farbpaar. Suche ~70 ms.
+- Mixxx legt neue Tracks erst beim Laden an und analysiert sie dann → die Brücke sucht bis zu 2 min alle 2 s nach
+  und lädt die Waveform nach (vorher: „nicht gefunden“ dauerhaft gemerkt, Waveform blieb leer).
+- User: Waveform sichtbar (Foto), Beat-Leiste im Takt, kein Ruckeln.
+- **Cues/Loops noch nicht:** `2d` hat 10 Plätze à 5 B (leer `00 9e 2f 27 01`). Test mit `[Typ][Position ms u32]`:
+  10 Plätze (Typ 0/1) → genau **ein** lila Marker bei ~1/3; 4 Plätze (Typ 0–3) → keiner. Format unklar →
+  neuer rekordbox-Mitschnitt mit bekannten Hot Cues/Memory Cue/Loop nötig. Mixxx-Cues stehen in Tabelle `cues`
+  (type, position, length, hotcue, label, color).
+
 ## Quellen
 - Upstream [jan0803/ddj1000-linux-driver](https://github.com/jan0803/ddj1000-linux-driver) (`origin/main`)
 - [Mixxx-Wiki DDJ-1000](https://github.com/mixxxdj/mixxx/wiki/ddj-1000)

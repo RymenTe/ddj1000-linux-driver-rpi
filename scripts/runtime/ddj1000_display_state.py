@@ -11,6 +11,7 @@ import threading
 import time
 
 import ddj1000_display as d
+import ddj1000_mixxx_track as mt
 
 SYSEX_PREFIX = bytes([0xF0, 0x7D, 0x44, 0x42])
 TEMPO_OFFSET = 1 << 20
@@ -64,6 +65,8 @@ class DisplayManager:
         self.fd = None
         self.dev = None
         self.stats = {"state_msgs": 0, "uploads": 0, "status_reports": 0, "hid_errors": 0}
+        self.tracks = mt.TrackLookup(log)
+        self.retry = {}   # deck -> (next try, give up at) while the waveform is missing
 
     def on_sysex(self, msg):
         st = parse_state(msg)
@@ -99,14 +102,27 @@ class DisplayManager:
         return (round(st["len"]), round(st["file_bpm"], 2))
 
     def upload(self, st):
-        beats = d.constant_beatgrid(st["file_bpm"], st["len"], st["first_beat"])
-        reps = d.track_upload(st["deck"], st["len"], beats, None)
+        info = self.tracks.find(st["len"], st["file_bpm"])
+        beats = info["beats"] if info and info["beats"] else None
+        if not beats:
+            beats = d.constant_beatgrid(st["file_bpm"], st["len"], st["first_beat"])
+        waveform = info["waveform"] if info else None
+        reps = d.track_upload(st["deck"], st["len"], beats, waveform)
         for rep in reps:
             self.write(rep)
             time.sleep(0.001)
         self.stats["uploads"] += 1
-        self.log(f"display: deck {st['deck']} track upload ({st['len'] / 1000:.1f} s, {st['file_bpm']:.2f} BPM, "
-                 f"{len(beats)} beats, {len(reps)} reports)")
+        what = (f"'{info['title']}' (id {info['id']}, {info['matches']} match(es), "
+                f"waveform {'yes' if waveform else 'no'}, beatmap {'yes' if info['beats'] else 'no'})"
+                if info else "not found in Mixxx DB (constant grid, no waveform)")
+        self.log(f"display: deck {st['deck']} upload {st['len'] / 1000:.1f} s {st['file_bpm']:.2f} BPM: {what}")
+        now = time.monotonic()
+        if waveform:
+            self.retry.pop(st["deck"], None)
+        elif st["deck"] not in self.retry:
+            self.retry[st["deck"]] = (now + 2.0, now + 120.0)
+        else:
+            self.retry[st["deck"]] = (now + 2.0, self.retry[st["deck"]][1])
 
     def run(self):
         if not self.open():
@@ -119,9 +135,21 @@ class DisplayManager:
             for deck, st in sorted(states.items()):
                 sig = self.signature(st)
                 if sig != self.uploaded.get(deck):
+                    self.retry.pop(deck, None)
                     if sig is not None:
                         self.upload(st)
                     self.uploaded[deck] = sig
+                elif sig is not None and deck in self.retry:
+                    nxt, give_up = self.retry[deck]
+                    now = time.monotonic()
+                    if now >= give_up:
+                        self.retry.pop(deck, None)
+                    elif now >= nxt:
+                        info = self.tracks.find(st["len"], st["file_bpm"])
+                        if info and info["waveform"]:
+                            self.upload(st)
+                        else:
+                            self.retry[deck] = (now + 2.0, give_up)
                 pos = st["pos"]
                 if st["playing"] and st["file_bpm"] > 0:
                     pos += (time.monotonic() - st["t"]) * 1000.0 * (st["bpm"] / st["file_bpm"])
