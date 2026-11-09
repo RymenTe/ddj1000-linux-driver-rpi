@@ -5581,6 +5581,176 @@
                     <script-binding />
                 </options>
             </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxChannelSelect</key>
+                <description>Beat FX channel select CH1</description>
+                <status>0x94</status>
+                <midino>0x10</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxChannelSelect</key>
+                <description>Beat FX channel select CH2</description>
+                <status>0x94</status>
+                <midino>0x11</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxChannelSelect</key>
+                <description>Beat FX channel select CH3</description>
+                <status>0x94</status>
+                <midino>0x12</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxChannelSelect</key>
+                <description>Beat FX channel select CH4</description>
+                <status>0x94</status>
+                <midino>0x13</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxChannelSelect</key>
+                <description>Beat FX channel select MASTER</description>
+                <status>0x94</status>
+                <midino>0x14</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxChannelSelect</key>
+                <description>Beat FX channel select MIC</description>
+                <status>0x94</status>
+                <midino>0x15</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxChannelSelect</key>
+                <description>Beat FX channel select SP</description>
+                <status>0x94</status>
+                <midino>0x16</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxSelect</key>
+                <description>Beat FX select phase 0</description>
+                <status>0x94</status>
+                <midino>0x20</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxSelect</key>
+                <description>Beat FX select phase 1</description>
+                <status>0x94</status>
+                <midino>0x21</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxSelect</key>
+                <description>Beat FX select phase 2</description>
+                <status>0x94</status>
+                <midino>0x22</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxOnState</key>
+                <description>Beat FX ON/OFF state (bridge mode)</description>
+                <status>0x94</status>
+                <midino>0x46</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxOnState</key>
+                <description>Beat FX ON/OFF state (bridge mode)</description>
+                <status>0x84</status>
+                <midino>0x46</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxOnToggle</key>
+                <description>Beat FX ON/OFF press (plain MIDI mode)</description>
+                <status>0x94</status>
+                <midino>0x47</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxBeat</key>
+                <description>Beat FX BEAT left</description>
+                <status>0x94</status>
+                <midino>0x4A</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[Master]</group>
+                <key>PioneerDDJ1000.beatFxBeat</key>
+                <description>Beat FX BEAT right</description>
+                <status>0x94</status>
+                <midino>0x4B</midino>
+                <options>
+                    <script-binding />
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>mix</key>
+                <description>Beat FX LEVEL/DEPTH MSB</description>
+                <status>0xB4</status>
+                <midino>0x02</midino>
+                <options>
+                    <fourteen-bit-msb />
+                </options>
+            </control>
+            <control>
+                <group>[EffectRack1_EffectUnit1]</group>
+                <key>mix</key>
+                <description>Beat FX LEVEL/DEPTH LSB</description>
+                <status>0xB4</status>
+                <midino>0x22</midino>
+                <options>
+                    <fourteen-bit-lsb />
+                </options>
+            </control>
         </controls>
         <outputs>
             <output>

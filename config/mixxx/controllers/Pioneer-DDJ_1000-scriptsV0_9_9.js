@@ -1047,112 +1047,37 @@ var timeTypeCH4 = 0;
 
 
 // ============================================================
-// Mixer / Beat FX additions (ddj1000-linux-driver, 2026-11-07)
-// MIDI numbers measured on the device via usbmon:
+// Mixer / Beat FX (ddj1000-linux-driver, 2026-11-07, Beat FX rewritten 2026-11-09)
+// MIDI numbers measured on the device (usbmon/aseqdump):
 //   Filter CH1..4      B6 17..1A (MSB) / B6 37..3A (LSB)   -> XML, 14 bit
-//   Beat FX LEVEL      B4 02 / B4 22                         -> XML, 14 bit
-//   Beat FX ON/OFF     94 47                                 -> beatFxOnOff
-//   Beat FX select     94 20/21/22 (3-phase rotary)          -> beatFxSelect
 //   Sync deck 1..4     90..93 58                             -> XML sync_enabled
+//   Beat FX LEVEL/DEPTH B4 02 / B4 22 (14 bit)               -> XML, [EffectRack1_EffectUnit1] mix
+//   Beat FX CH select  94 10=CH1 11=CH2 12=CH3 13=CH4 14=MASTER 15=MIC 16=SP   -> beatFxChannelSelect
+//   Beat FX SELECT     94 20/21/22 = phase of the 14-position rotary            -> beatFxSelect
+//                      (pos 1 LOW CUT ECHO=20, 2 ECHO=21, 3 MT DELAY=22, 4 SPIRAL=20, ...)
+//   Beat FX ON/OFF     94 46 note-on/off = state (heartbeat/bridge mode)       -> beatFxOnState
+//                      94 47 press = toggle (plain MIDI mode, no bridge)       -> beatFxOnToggle
+//   BEAT < / >         94 4A / 94 4B (display stays at "120" in bridge mode)   -> beatFxBeat
+//
+// Why software: in internal mode the DDJ-1000 only gets the master mix over USB, so its own Beat FX
+// DSP works on MST only. CH1-4 / MIC / SP are done in Mixxx Effect Unit 1, like rekordbox does it.
+// MASTER stays with the hardware (Mixxx does nothing there, otherwise the effect would be doubled).
+// Only LOW CUT ECHO and ECHO are used: on this unit the selector is defective beyond MT DELAY, and
+// leaving the MIC position resets the FX section (DDJ sends 94 20 + 94 46 + status dump and its
+// display jumps to ENIGMA JET). We follow the phase note, not the DDJ display, so a reset does
+// not change the software effect while the knob stays on LOW CUT ECHO / ECHO.
+// Preset index = position in effects.xml <ChainPresetList> + 1 (scripts/ddj1000-mixxx-config.py).
 // ============================================================
-PioneerDDJ1000.BEAT_FX_EFFECT = "[EffectRack1_EffectUnit1_Effect1]";
-
-// Beat FX type list (2026-11-08): own chain presets with FIXED values (see PAD FX1); stepping
-// through all Mixxx effects landed on EQs/Autopan/Metronome, which are inaudible on one deck.
-// LEVEL/DEPTH = unit mix (XML). Index = position in effects.xml <ChainPresetList> + 1.
-PioneerDDJ1000.BEAT_FX_LIST = [
-    {name: "ECHO 1/2", index: 2},
-    {name: "ECHO 1/4", index: 1},
-    {name: "ECHO 1/2 LONG", index: 3},
-    {name: "REVERB", index: 4},
-    {name: "FLANGER", index: 5},
-    {name: "FILTER (HPF)", index: 6},
-];
-PioneerDDJ1000.beatFxPos = 0;
-PioneerDDJ1000.beatFxOn = false;
-PioneerDDJ1000.beatFxApplyOn = function() {
-    for (var e = 1; e <= 3; e++) {
-        var g = "[EffectRack1_EffectUnit1_Effect" + e + "]";
-        if (engine.getValue(g, "loaded")) { engine.setValue(g, "enabled", PioneerDDJ1000.beatFxOn ? 1 : 0); }
-    }
-};
-PioneerDDJ1000.beatFxLoad = function() {
-    var fx = PioneerDDJ1000.BEAT_FX_LIST[PioneerDDJ1000.beatFxPos];
-    engine.setValue(PioneerDDJ1000.BEAT_FX_UNIT, "enabled", 1);
-    engine.setValue(PioneerDDJ1000.BEAT_FX_UNIT, "loaded_chain_preset", fx.index);
-    PioneerDDJ1000.beatFxApplyOn();
-    engine.beginTimer(60, PioneerDDJ1000.beatFxApplyOn, true);   // preset load may reset slot flags
-    print("DDJ-1000 BeatFX type " + fx.name + " (preset " + fx.index + ") on=" + PioneerDDJ1000.beatFxOn);
-};
-
-PioneerDDJ1000.beatFxOnOff = function(channel, control, value, status, group) {
-    if (value !== 0x7F) {
-        return;
-    }
-    if (engine.getValue(PioneerDDJ1000.BEAT_FX_UNIT, "loaded_chain_preset") !==
-        PioneerDDJ1000.BEAT_FX_LIST[PioneerDDJ1000.beatFxPos].index) {
-        PioneerDDJ1000.beatFxLoad();
-    }
-    PioneerDDJ1000.beatFxOn = !PioneerDDJ1000.beatFxOn;
-    var on = PioneerDDJ1000.beatFxOn;
-    PioneerDDJ1000.beatFxApplyOn();
-    midi.sendShortMsg(0x94, 0x47, on ? 0x7F : 0x00);
-    // Diagnostics (temporary, 2026-11-08): which channel gets the FX when it is switched on
-    var u = PioneerDDJ1000.BEAT_FX_UNIT, st = "DDJ-1000 BeatFX ON/OFF -> on=" + (on ? 1 : 0) +
-        " type=" + PioneerDDJ1000.BEAT_FX_LIST[PioneerDDJ1000.beatFxPos].name + " route:";
-    ["[Channel1]", "[Channel2]", "[Channel3]", "[Channel4]", "[Master]"].forEach(function(g) {
-        if (engine.getValue(u, "group_" + g + "_enable")) { st += " " + g; }
-    });
-    st += " mix=" + engine.getValue(u, "mix").toFixed(2) + " E1.enabled=" +
-        engine.getValue(PioneerDDJ1000.BEAT_FX_EFFECT, "enabled");
-    for (var d = 1; d <= 4; d++) {
-        st += " D" + d + ".play=" + engine.getValue("[Channel" + d + "]", "play") +
-            " vol=" + engine.getValue("[Channel" + d + "]", "volume").toFixed(2);
-    }
-    print(st);
-};
-
-PioneerDDJ1000.beatFxSelectLast = -1;
-PioneerDDJ1000.beatFxSelect = function(channel, control, value, status, group) {
-    if (value !== 0x7F) {
-        return;
-    }
-    // The selector reports its detent as one of three notes (0x20, 0x21, 0x22) in a cycle;
-    // the step from the previous note gives the direction.
-    var pos = control - 0x20;
-    var last = PioneerDDJ1000.beatFxSelectLast;
-    PioneerDDJ1000.beatFxSelectLast = pos;
-    if (last < 0) {
-        return;
-    }
-    var step = (pos - last + 3) % 3;
-    var n = PioneerDDJ1000.BEAT_FX_LIST.length;
-    if (step === 1) {
-        PioneerDDJ1000.beatFxPos = (PioneerDDJ1000.beatFxPos + 1) % n;
-    } else if (step === 2) {
-        PioneerDDJ1000.beatFxPos = (PioneerDDJ1000.beatFxPos + n - 1) % n;
-    } else {
-        return;
-    }
-    PioneerDDJ1000.beatFxLoad();
-};
-
-// Beat FX channel select (rotary, clockwise: SP MIC 3 1 2 4 MASTER). Each detent sends
-// note-on 0x7F for the new position: 94 10=CH1 11=CH2 12=CH3 13=CH4 14=MASTER 15=MIC 16=SP.
-// Routes [EffectRack1_EffectUnit1] exclusively to the selected target.
 PioneerDDJ1000.BEAT_FX_UNIT = "[EffectRack1_EffectUnit1]";
-PioneerDDJ1000.beatFxTargets = function(control) {
-    switch (control) {
-    case 0x10: return ["[Channel1]"];
-    case 0x11: return ["[Channel2]"];
-    case 0x12: return ["[Channel3]"];
-    case 0x13: return ["[Channel4]"];
-    case 0x14: return ["[Master]"];
-    case 0x15: return ["[Microphone]"];
-    case 0x16: return PioneerDDJ1000.samplerGroups();
-    }
-    return [];
+PioneerDDJ1000.BEAT_FX_EFFECT = "[EffectRack1_EffectUnit1_Effect1]";   // Echo sits in slot 1 of both presets
+PioneerDDJ1000.BEAT_FX_BY_PHASE = {
+    0: {name: "LOW CUT ECHO", index: 8},   // "DDJ BeatFX Low Cut Echo"
+    1: {name: "ECHO", index: 7},           // "DDJ BeatFX Echo"
+    // 2: MT DELAY -> no software effect
 };
+PioneerDDJ1000.BEAT_FX_BEATS = [0.125, 0.25, 0.5, 0.75, 1, 2];   // Echo delay_time in beats (quantize on)
+PioneerDDJ1000.beatFx = {targets: [], phase: -1, on: false, beatIdx: 2};
+
 PioneerDDJ1000.samplerGroups = function() {
     var count = engine.getValue("[App]", "num_samplers") || engine.getValue("[Master]", "num_samplers") || 0;
     var groups = [];
@@ -1161,24 +1086,106 @@ PioneerDDJ1000.samplerGroups = function() {
     }
     return groups;
 };
-PioneerDDJ1000.beatFxChannelSelect = function(channel, control, value, status, group) {
-    if (value !== 0x7F) {
-        return;
+PioneerDDJ1000.beatFxTargets = function(control) {
+    switch (control) {
+    case 0x10: return ["[Channel1]"];
+    case 0x11: return ["[Channel2]"];
+    case 0x12: return ["[Channel3]"];
+    case 0x13: return ["[Channel4]"];
+    case 0x15: return ["[Microphone]"];
+    case 0x16: return PioneerDDJ1000.samplerGroups();
     }
+    return [];   // 0x14 MASTER: hardware Beat FX
+};
+
+PioneerDDJ1000.beatFxSetDelay = function() {
+    var beats = PioneerDDJ1000.BEAT_FX_BEATS[PioneerDDJ1000.beatFx.beatIdx];
+    engine.setValue(PioneerDDJ1000.BEAT_FX_EFFECT, "parameter1", beats);
+    print("DDJ-1000 BeatFX delay " + beats + " beat(s): parameter1=" +
+        engine.getValue(PioneerDDJ1000.BEAT_FX_EFFECT, "parameter1") + " (normalised " +
+        engine.getParameter(PioneerDDJ1000.BEAT_FX_EFFECT, "parameter1").toFixed(3) + ")");
+};
+
+PioneerDDJ1000.beatFxApplyEnable = function() {
+    var s = PioneerDDJ1000.beatFx;
+    var active = s.on && s.targets.length > 0 && PioneerDDJ1000.BEAT_FX_BY_PHASE[s.phase] !== undefined;
+    for (var e = 1; e <= 3; e++) {
+        var g = "[EffectRack1_EffectUnit1_Effect" + e + "]";
+        engine.setValue(g, "enabled", active && engine.getValue(g, "loaded") ? 1 : 0);
+    }
+    return active;
+};
+
+PioneerDDJ1000.beatFxApply = function(reason) {
+    var s = PioneerDDJ1000.beatFx, u = PioneerDDJ1000.BEAT_FX_UNIT;
+    var fx = PioneerDDJ1000.BEAT_FX_BY_PHASE[s.phase];
     var all = ["[Channel1]", "[Channel2]", "[Channel3]", "[Channel4]", "[Master]", "[Microphone]"]
         .concat(PioneerDDJ1000.samplerGroups());
-    var targets = PioneerDDJ1000.beatFxTargets(control);
     for (var i = 0; i < all.length; i++) {
-        engine.setValue(PioneerDDJ1000.BEAT_FX_UNIT, "group_" + all[i] + "_enable",
-            targets.indexOf(all[i]) >= 0 ? 1 : 0);
+        engine.setValue(u, "group_" + all[i] + "_enable", s.targets.indexOf(all[i]) >= 0 ? 1 : 0);
     }
-    // Diagnostics (temporary, 2026-11-08)
-    var u = PioneerDDJ1000.BEAT_FX_UNIT, st = "DDJ-1000 BeatFX route 0x" + control.toString(16) + ":";
-    for (var j = 0; j < 6; j++) { st += " " + all[j] + "=" + engine.getValue(u, "group_" + all[j] + "_enable"); }
-    st += " unit.enabled=" + engine.getValue(u, "enabled") + " unit.mix=" + engine.getValue(u, "mix").toFixed(2) +
-        " fx.enabled=" + engine.getValue(PioneerDDJ1000.BEAT_FX_EFFECT, "enabled") +
-        " fx.loaded=" + engine.getValue(PioneerDDJ1000.BEAT_FX_EFFECT, "loaded");
-    print(st);
+    engine.setValue(u, "enabled", 1);
+    if (fx && engine.getValue(u, "loaded_chain_preset") !== fx.index) {
+        engine.setValue(u, "loaded_chain_preset", fx.index);
+        // a preset load resets the slot flags and parameters -> apply again once it is in place
+        engine.beginTimer(60, function() {
+            PioneerDDJ1000.beatFxSetDelay();
+            PioneerDDJ1000.beatFxApplyEnable();
+        }, true);
+    }
+    var active = PioneerDDJ1000.beatFxApplyEnable();
+    print("DDJ-1000 BeatFX " + reason + ": " + (fx ? fx.name : "phase " + s.phase + " (no software FX)") +
+        " targets=" + (s.targets.join(",") || "none/MASTER=hardware") + " on=" + s.on + " active=" + active +
+        " beat=" + PioneerDDJ1000.BEAT_FX_BEATS[s.beatIdx] +
+        " preset=" + engine.getValue(u, "loaded_chain_preset") + " mix=" + engine.getValue(u, "mix").toFixed(2));
+};
+
+PioneerDDJ1000.beatFxChannelSelect = function(channel, control, value, status, group) {
+    if ((status & 0xF0) !== 0x90 || value === 0) {
+        return;   // the DDJ sends note-off for the old detent first
+    }
+    PioneerDDJ1000.beatFx.targets = PioneerDDJ1000.beatFxTargets(control);
+    PioneerDDJ1000.beatFxApply("channel 0x" + control.toString(16));
+};
+
+PioneerDDJ1000.beatFxSelect = function(channel, control, value, status, group) {
+    if ((status & 0xF0) !== 0x90 || value === 0) {
+        return;
+    }
+    PioneerDDJ1000.beatFx.phase = control - 0x20;
+    PioneerDDJ1000.beatFxApply("select 0x" + control.toString(16));
+};
+
+PioneerDDJ1000.beatFxOnState = function(channel, control, value, status, group) {
+    PioneerDDJ1000.beatFx.on = (status & 0xF0) === 0x90 && value > 0;
+    // Heartbeat/bridge mode: like the pad modes, the DDJ expects the host to confirm the new state;
+    // without this echo its internal toggle drifts and a press sometimes repeats the old state.
+    midi.sendShortMsg(0x94, 0x46, PioneerDDJ1000.beatFx.on ? 0x7F : 0x00);
+    PioneerDDJ1000.beatFxApply("on/off state");
+};
+
+PioneerDDJ1000.beatFxOnToggle = function(channel, control, value, status, group) {
+    if ((status & 0xF0) !== 0x90 || value === 0) {
+        return;
+    }
+    PioneerDDJ1000.beatFx.on = !PioneerDDJ1000.beatFx.on;
+    midi.sendShortMsg(0x94, 0x47, PioneerDDJ1000.beatFx.on ? 0x7F : 0x00);   // ON/OFF LED (plain MIDI mode)
+    PioneerDDJ1000.beatFxApply("on/off toggle");
+};
+
+PioneerDDJ1000.beatFxBeat = function(channel, control, value, status, group) {
+    if ((status & 0xF0) !== 0x90 || value === 0) {
+        return;
+    }
+    var s = PioneerDDJ1000.beatFx, n = PioneerDDJ1000.BEAT_FX_BEATS.length;
+    s.beatIdx = Math.max(0, Math.min(n - 1, s.beatIdx + (control === 0x4B ? 1 : -1)));
+    PioneerDDJ1000.beatFxSetDelay();
+};
+
+PioneerDDJ1000.beatFxInit = function() {
+    // Unit 1 state is persisted by Mixxx: start silent; the DDJ status dump on mapping load
+    // reports CH select, SELECT phase and ON state and fills in the rest.
+    PioneerDDJ1000.beatFxApply("init");
 };
 
 // ============================================================
@@ -1265,13 +1272,8 @@ PioneerDDJ1000.colorFxInit = function() {
         " (expected Filter=" + PioneerDDJ1000.COLOR_FX_PRESETS[PioneerDDJ1000.COLOR_FX_DEFAULT].index + ")");
     PioneerDDJ1000.colorFxApply(PioneerDDJ1000.COLOR_FX_DEFAULT);
     PioneerDDJ1000.colorFxDiagInit();
-    // Beat FX: handled by the DDJ-1000's own DSP (LOW CUT ECHO etc. on the unit display);
-    // no Mixxx mapping since 2026-11-08 (Mixxx only sends the master mix, so the built-in
-    // Beat FX work on MST only). The beatFx* functions below are kept but unused.
-    // Clear what the earlier software Beat FX left in Effect Unit 1 (state is persisted).
-    for (var e = 1; e <= 3; e++) {
-        engine.setValue("[EffectRack1_EffectUnit1_Effect" + e + "]", "enabled", 0);
-    }
+    // Beat FX: MASTER = DDJ hardware DSP, CH1-4/MIC/SP = Mixxx Effect Unit 1 (see beatFx*).
+    PioneerDDJ1000.beatFxInit();
 };
 
 PioneerDDJ1000.colorFxButton = function(channel, control, value, status, group) {

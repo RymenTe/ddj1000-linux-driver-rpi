@@ -356,3 +356,18 @@ Offen → siehe `docs/BRIEFING-next-session.md`.
   `rpi4`-Fassung übernommen, `DDJ-1000test.midi.xml` entfällt. Baum `main` = `rpi4`, `validate-repo.py` grün.
 - Nächster Schritt: User pusht `rpi4`; danach Alt-udev-Regeln aufräumen (Freigabe), Langzeittest > 1 h,
   offene Display-Punkte (Deck-Umschaltung 1↔3/2↔4, Beat FX).
+
+## 2026-11-09 (19:20–21:30) – Software-Beat-FX pro Kanal (ECHO / LOW CUT ECHO)
+
+- Hintergrund: Wahlschalter Beat FX SELECT am Gerät des Users defekt ab MT DELAY; Verlassen der MIC-Stellung
+  löst beim DDJ einen FX-Reset aus (`94 20` + `94 46` + Status-Dump, Anzeige ENIGMA JET), gemessen 12/12
+  (`~/build-logs/midi-beatfx-20261109-1922.log`).
+- Mapping/Script: CH-Wahl `94 10–16` → Effect Unit 1 auf CH1–4/MIC/SP, MASTER bleibt Hardware-DSP (kein
+  doppeltes Echo). SELECT-Phase `94 20` = LOW CUT ECHO, `94 21` = ECHO (eigene Presets `DDJ BeatFX …`,
+  Preset-Index 8/7), sonst keine Software-FX. ON/OFF `94 46` (Zustand, Echo zurück) bzw. `94 47` (Toggle),
+  BEAT `94 4A/4B` → Echo-Zeit 1/8…2 Beats, LEVEL/DEPTH `B4 02/22` → Unit-`mix`.
+- Backups `~/.mixxx/controllers/*.backup-20261109-1946`.
+- User-Hörtest: „Das geht“.
+- Beobachtet, offen: beim Ausschalten steht `mix` im Log auf 0 (LEVEL-Regler oder vom DDJ gesendet – nicht geklärt).
+- Frage des Users: Hardware-Beat-FX pro Kanal nur bei Line/Phono-Quellen (Signalfluss Internal Mode,
+  Mixxx-Wiki-Tabelle), USB-Decks des DDJ-1000 laufen nicht durch die Kanalzüge.

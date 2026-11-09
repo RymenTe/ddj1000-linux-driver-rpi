@@ -33,7 +33,7 @@ VIRMIDI_CONTROLLER = "VirMIDI_7-0"          # snd-virmidi index 7 (config/modpro
 SKIN = "Pioneered-4Deck"
 # order = index used in the mapping (1-based, 0 = "---"): PAD_FX1_EFFECTS / BEAT_FX_LIST / COLOR_FX_PRESETS
 CHAIN_PRESETS = ["PadFX Echo 1-4", "PadFX Echo 1-2", "PadFX Echo 1-2 Long", "PadFX Reverb 50",
-                 "PadFX Flanger 16", "PadFX Sweep"]
+                 "PadFX Flanger 16", "PadFX Sweep", "DDJ BeatFX Echo", "DDJ BeatFX Low Cut Echo"]
 QUICK_PRESETS = ["DDJ ColorFX Filter", "DDJ ColorFX Filter Echo", "DDJ ColorFX White Noise"]
 SYSTEM_SKIN_DIRS = [Path("/usr/share/mixxx/skins"), Path("/usr/local/share/mixxx/skins"),
                     Path("/var/lib/flatpak/app/org.mixxx.Mixxx/current/active/files/share/mixxx/skins")]
