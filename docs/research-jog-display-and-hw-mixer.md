@@ -160,6 +160,22 @@ vor dem HID-Verkehr sendet. **Nächster Schritt:** Prototyp unter Linux, der fü
 Waveform + Status nach diesem Schema sendet. Zuerst nur mit Testdaten an EP 0x06, ohne Mixxx, mit Rawmidi-Init.
 Risiko HID-Modus siehe oben.
 
+### Display-Test unter Linux – 2026-11-09 (ohne Erfolg, Ergebnis festgehalten)
+
+HID-Interface 3 ist unter Linux `/dev/hidrawN` (hid-generic, Gruppe plugdev, für `pi` schreibbar). Der
+Report-Deskriptor hat keine Report-IDs und 64-B-Reports, also beim Schreiben `0x00` + 64 B voranstellen.
+Kein libusb und kein Claim an Interface 0 nötig. Skripte: `scripts/dev/display-test/`.
+
+- **Stufe 1** (Mixxx läuft): Deck-1-Upload aus dem Mitschnitt (51,70–52,50 s, 240 Reports, Originaltiming)
+  + `0x21` 15 s mit 60 Hz über hidraw → Schreiben fehlerfrei, **Display unverändert**.
+- **Stufe 2** (Mixxx beendet): vorher per Rawmidi (ein FD, ein `os.write` je SysEx) `00 0a`, `00 0b 31 00…`,
+  `00 0b 31 5e 50 01…`, `00 0c`, `03 01` (3×), dann wie Stufe 1 + `03 01` 1×/s → **Display unverändert** (2× getestet).
+  Erkenntnis: **`03 01` = Status-Dump-Anforderung** (DDJ antwortet mit allen Fader/Gain/EQ-CCs), kein HID-Modus.
+  `00 0a/0b/0c` ohne Antwort. Kernel-Log ruhig, Audio unbeeinflusst.
+- Noch nicht gemacht: Heartbeat `50 01` (5 Hz) + Unlock-Handshake **in derselben Sitzung** vor dem Upload, wie
+  rekordbox es tut. Risiko: ersetzt die Unlock-Sitzung des Dienstes (Audio weg, falls der Handshake scheitert →
+  `ddj1000-unlock.service` neu starten bzw. DDJ aus/an).
+
 ## Quellen
 - Upstream [jan0803/ddj1000-linux-driver](https://github.com/jan0803/ddj1000-linux-driver) (`origin/main`)
 - [Mixxx-Wiki DDJ-1000](https://github.com/mixxxdj/mixxx/wiki/ddj-1000)
