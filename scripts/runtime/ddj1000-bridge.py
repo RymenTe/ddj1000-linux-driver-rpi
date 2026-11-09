@@ -272,7 +272,7 @@ class Bridge:
         writer = threading.Thread(target=self.writer, name="writer", daemon=True)
         writer.start()
         if not a.no_display:
-            self.display = display_state.DisplayManager(self.log)
+            self.display = display_state.DisplayManager(self.log, patch_file=self.args.status_patch_file)
             threading.Thread(target=self.display.run, name="display", daemon=True).start()
 
         parser = MidiParser()
@@ -336,6 +336,8 @@ def parse_args():
     ap.add_argument("--no-display", action="store_true", help="do not drive the jog displays (HID)")
     ap.add_argument("--log-pad-mode", action="store_true", help="log every pad mode change")
     ap.add_argument("--stats-interval-s", type=float, default=30.0, help="0 = no periodic stats")
+    ap.add_argument("--status-patch-file", default="",
+                    help="field hunting: file with lines '<deck> <byte>=<hex> ...' applied to every 0x21 report")
     return ap.parse_args()
 
 

@@ -155,12 +155,14 @@ def bpm_field(bpm):
 
 
 def status(deck, position_ms, length_ms, key_code=0, key_shift=0, bpm=0.0, tempo_pct=0.0,
-           loaded=True, master=False, sync=False, flags=0x18, flags3=0x0A, loop=None):
+           loaded=True, master=False, sync=False, flags=0x18, flags3=0x0A, loop=None, tempo_range=6):
     """0x21 deck status (fields confirmed on the device 2026-11-09 unless noted):
     9 = 0xb4 track loaded (0 -> "not loaded"), 11-14 position mm ss ms16, 15-18 length,
     21-22 (and 38-39) BPM, 23-24 tempo in 0.01 % (int16 LE), 60 = 0x80 | key code (MIDI 9n 49 table,
     shown in Camelot notation), 61 = key variation (0x0D = 0).
     5 = 0x01 | 0x80 "MASTER" | 0x10 "SYNC" (0x20 also lights SYNC; "BEAT SYNC" bit not found yet).
+    4 high nibble = tempo range box: 1 = +-6, 2 = +-10, 3 = +-16, 4 = WIDE (0, 5-7: no box), low nibble 1
+    (field test 2026-11-09); tempo_range = Mixxx rateRange in % (6/10/16/25/50/100).
     9 bit 3 (0xbc) = loop active,
     25-27 loop start ms (u24 LE, bit 7 of byte 27 = loop not active), 28-30 loop end ms (u24 LE); no loop =
     00 00 80 / 0 (rekordbox capture DDJ1000-Hotcue: LOOP IN -> start|0x800000, LOOP OUT -> end, running -> bit cleared).
@@ -171,7 +173,7 @@ def status(deck, position_ms, length_ms, key_code=0, key_shift=0, bpm=0.0, tempo
     rep[1] = 0x21
     rep[2] = flags
     rep[3] = flags3
-    rep[4] = 0x11
+    rep[4] = (1 if tempo_range <= 6 else 2 if tempo_range <= 10 else 3 if tempo_range <= 16 else 4) << 4 | 0x01
     rep[5] = 0x01 | (0x80 if master else 0) | (0x10 if sync else 0)
     rep[9] = 0xB4 if loaded else 0x00
     rep[11:15] = length_field(position_ms)

@@ -280,6 +280,10 @@ bernstein, Höhen weiß), dunkle/helle Variante als Farbpaar. Suche ~70 ms.
 - Brücke: Hot Cues A–H live (`30 01` + `30 02` nach Upload und bei Änderung), Farbe RGB → Farbkreis-Code (User: „Colors passen“).
 - Offen: Memory Cues/Haupt-Cue, Typ `02` (gespeicherte Loops) optisch, Byte 55–59 (nächster Cue),
   Display folgt nicht dem Deck-Wechsel 1↔3 / 2↔4, Hot-Cue-Farbe im Pioneered-Skin nicht editierbar.
+- **Tempo-Range-Box (Feldtest 2026-11-09):** `0x21` Byte 4 oberes Nibble `1` = ±6, `2` = ±10, `3` = ±16, `4` = WIDE
+  (`0`, `5`–`7` keine Box), unteres Nibble `1`. Mapping hängt `rateRange*100` an die Deck-Zustand-SysEx an; Mixxx
+  25/50/100 % → WIDE. User: „geht“. Feldsuche live über `ddj1000-bridge.py --status-patch-file` (Zeilen
+  `<deck> <byte>=<hex> …`, Phasen über die BPM-Anzeige nummeriert).
 - Brücke bleibt nach schnellem Neustart (< 1 s) `LOCKED` (DDJ sendet kein `11 02`) → 5 s warten; später: Heartbeat bei
   LOCKED kurz aussetzen, um eine neue Sitzung zu erzwingen.
 

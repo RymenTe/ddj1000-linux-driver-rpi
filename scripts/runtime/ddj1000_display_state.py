@@ -2,7 +2,7 @@
 
 The Mixxx mapping sends one SysEx per deck about 20x/s (never forwarded to the DDJ):
   F0 7D 44 42 01 <deck 0-3> <flags> <pos ms:4> <len ms:4> <file bpm*100:3> <bpm*100:3>
-     <tempo*100 + 2^20:3> <key 0-24 (Mixxx)> <key shift + 12> <first beat ms:3> F7
+     <tempo*100 + 2^20:3> <key 0-24 (Mixxx)> <key shift + 12> <first beat ms:3> [<rateRange*100>] F7
   numbers as little-endian 7-bit groups; flags bit0 loaded, bit1 playing, bit2 sync leader, bit3 sync on.
 Hot cues 1-8 (on change and every 2 s):
   F0 7D 44 42 02 <deck 0-3> { <status 0/1> <Mixxx hotcue type> <pos ms:4> <rgb:4> } x8
@@ -51,7 +51,8 @@ def parse_state(msg):
     key = msg[p]; p += 1
     shift = msg[p] - 12; p += 1
     first, p = dec7(msg, p, 3)
-    return {"deck": deck + 1, "loaded": bool(flags & 1), "playing": bool(flags & 2), "leader": bool(flags & 4), "sync": bool(flags & 8),
+    rate_range = msg[p] if p < len(msg) - 1 else 6
+    return {"range": rate_range, "deck": deck + 1, "loaded": bool(flags & 1), "playing": bool(flags & 2), "leader": bool(flags & 4), "sync": bool(flags & 8),
             "pos": float(pos), "len": float(length), "file_bpm": fbpm / 100.0, "bpm": bpm / 100.0,
             "tempo": (tempo - TEMPO_OFFSET) / 100.0, "key": key, "shift": shift, "first_beat": float(first),
             "t": time.monotonic()}
@@ -80,8 +81,12 @@ def parse_cues(msg):
 
 
 class DisplayManager:
-    def __init__(self, log, rate_hz=30.0):
+    def __init__(self, log, rate_hz=30.0, patch_file=""):
         self.log = log
+        self.patch_file = patch_file
+        self.patches = {}        # deck -> {byte: value} (field hunting, --status-patch-file)
+        self.patch_mtime = None
+        self.patch_check = 0.0
         self.rate = rate_hz
         self.states = {}
         self.uploaded = {}
@@ -162,12 +167,38 @@ class DisplayManager:
         else:
             self.retry[st["deck"]] = (now + 2.0, self.retry[st["deck"]][1])
 
+    def load_patches(self):
+        """re-read the patch file at most every 0.3 s when it changed"""
+        now = time.monotonic()
+        if not self.patch_file or now < self.patch_check:
+            return
+        self.patch_check = now + 0.3
+        try:
+            mtime = os.stat(self.patch_file).st_mtime
+        except OSError:
+            mtime = None
+        if mtime == self.patch_mtime:
+            return
+        self.patch_mtime = mtime
+        patches = {}
+        try:
+            for line in open(self.patch_file) if mtime else []:
+                parts = line.split("#")[0].split()
+                if len(parts) >= 2:
+                    patches[int(parts[0])] = {int(k): int(v, 16) for k, v in (kv.split("=") for kv in parts[1:])}
+        except (OSError, ValueError) as exc:
+            self.log(f"display: WARN patch file: {exc}")
+            return
+        self.patches = patches
+        self.log(f"display: status patches {patches or 'none'}")
+
     def run(self):
         if not self.open():
             return
         period = 1.0 / self.rate
         while not self.stop.is_set():
             t_next = time.monotonic() + period
+            self.load_patches()
             with self.lock:
                 states = dict(self.states)
                 cues = dict(self.cues)
@@ -205,9 +236,16 @@ class DisplayManager:
                 if st["playing"] and st["file_bpm"] > 0:
                     pos += (time.monotonic() - st["t"]) * 1000.0 * (st["bpm"] / st["file_bpm"])
                 pos = max(0.0, min(pos, st["len"]))
-                self.write(d.status(deck, pos, st["len"], mixxx_key_to_ddj(st["key"]), st["shift"],
-                                    bpm=st["bpm"], tempo_pct=st["tempo"], loaded=st["loaded"],
-                                    master=st["leader"], sync=st["sync"], loop=loops.get(deck)))
+                rep = d.status(deck, pos, st["len"], mixxx_key_to_ddj(st["key"]), st["shift"],
+                               bpm=st["bpm"], tempo_pct=st["tempo"], loaded=st["loaded"],
+                               master=st["leader"], sync=st["sync"], loop=loops.get(deck),
+                               tempo_range=st["range"])
+                if deck in self.patches:
+                    rep = bytearray(rep)
+                    for k, v in self.patches[deck].items():
+                        rep[k] = v
+                    rep = bytes(rep)
+                self.write(rep)
                 self.stats["status_reports"] += 1
             self.stop.wait(max(0.0, t_next - time.monotonic()))
         if self.fd is not None:
