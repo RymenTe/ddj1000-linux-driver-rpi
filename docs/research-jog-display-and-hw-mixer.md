@@ -131,6 +131,35 @@ Abgleich mit dem Upstream-Repo **jan0803/ddj1000-linux-driver** (`origin/main`, 
   anders (Mixxx-Wiki), daher zuerst isoliert ohne Mixxx probieren und mit `aseqdump` vergleichen.
 - Unser Unlock-Tool sendet keine dieser Nachrichten; Jog-Displays zeigen trotzdem Zeit/BPM über das MIDI-Mapping.
 
+### Zweiter Mitschnitt mit geladenen Tracks – Auswertung 2026-11-09
+
+Datei (nicht im Repo, 289 MB): `~/ddj1000-captures/windows-rekordbox-20261109/DDJ1000-Wavform.pcapng`
+(SHA-256 `ec6d6d6ab040a337…`, 97,5 s, DDJ = **Gerät 7**). Werkzeuge: `usbpcap-hid-dump.py` (→ Textdump),
+`usbpcap-hid-series.py`, `ddj-hid-decode.py <dump> <deck> <t_von> <t_bis>`. Ohne Notizen des Users, Ablauf
+aus den Daten: Init/Leeren ~35,6 s, Track auf Deck 1 ~51,7 s, Deck 2 ~54,1 s, beide erneut geladen ~59 s.
+
+**Blockaufbau HID-OUT (EP 0x06, 64 B):** Byte 0 = Deck (`x0`), Byte 1 = Befehl, Byte 2 = Blockindex (ab 1),
+Byte 3 = 0, Byte 4 = Blockanzahl, Byte 5 = 0, **Nutzdaten ab Byte 6 (58 B)**.
+
+Ablauf beim Track-Laden je Deck: `30 01` (Kopf) → `30 02` → `2f`-Serie → `2d` → `2c`-Serie → `2b 01 00 01` (Abschluss).
+
+| Befehl | Inhalt (entschlüsselt) |
+|---|---|
+| `30 01` | `00 mm ss <ms u16 LE>` = **Tracklänge** (Deck 1 `05 02 90 01` = 5:02,400; Deck 2 `06 06 b0 03` = 6:06,944) |
+| `2f` (53/60 Blöcke) | **Beatgrid**: u16 LE Anzahl, dann je Beat 4 B `[Taktschlag 1–4][Position ms, 24 bit LE]`. Deck 1: 756 Beats à 400 ms = 150 BPM; Deck 2: 863 Beats, 425/426 ms ≈ 141,1 BPM; erster Beat 0 bzw. 159 ms |
+| `2d` | Tracklänge wie `30 01`, dann `0a 00` + 10× `00 9e 2f 27 01` – vermutlich 10 leere Hot-Cue/Memory-Slots |
+| `2c` (73 Blöcke = 4234 B) | **Overview-Waveform: 600 Punkte à 7 B** `[Flag (0x80 nur am 1. Punkt)][Farbe 1 RGB565 LE][Farbe 2 RGB565 LE][Höhe 1][Höhe 2]`; Höhe 0–40, Höhe 1 ≥ Höhe 2, Farbe 2 = hellere Variante von Farbe 1 (zwei Ebenen wie CDJ-Farbwaveform). Nach Trackende Füllpunkte `00 f7 bd ff ff 01 01` (grau/weiß, Höhe 1) |
+| `21` (~60/s) | **Deck-Status**: Byte 2 Flags (`18` läuft, `1a` = Stand am Cue?), Byte 3 Flags (`02/08/0a`), Byte 5 Bit 7 ?, **Byte 11–14 = Abspielposition `mm ss ms(u16 LE)`**, Byte 15–18 = Tracklänge, Byte 21/38 = `9f`?, Byte 60 = `0x80 \| Key` (Key-Code wie MIDI `9n 49`, z. B. `94` = F#m, `88` = Cm), **Byte 61 = Key-Variation** (`0d` = 0, wie MIDI `9n 4A`) |
+
+Beispiel `21`: `10 21 1a 08 11 01 00 00 00 b4 00 03 11 9e 00 05 02 90 01 00 00 9f 00 58 02 00 00 80 … 9f … 01 00 94 0d`
+→ Deck 1 steht bei 3:17,158 von 5:02,400, Key F#m.
+
+Offen/zu prüfen: Hot-Cue-/Memory-Einträge mit Inhalt (`2d`), Cover (in diesem Mitschnitt kein eigener Befehl
+gesehen), Bedeutung `30 02`, die Flags in `21`. Dazu kommt die MIDI-Startsequenz (`03 01`, `00 0a/0b/0c`), die rekordbox
+vor dem HID-Verkehr sendet. **Nächster Schritt:** Prototyp unter Linux, der für einen Track aus Mixxx Beatgrid +
+Waveform + Status nach diesem Schema sendet. Zuerst nur mit Testdaten an EP 0x06, ohne Mixxx, mit Rawmidi-Init.
+Risiko HID-Modus siehe oben.
+
 ## Quellen
 - Upstream [jan0803/ddj1000-linux-driver](https://github.com/jan0803/ddj1000-linux-driver) (`origin/main`)
 - [Mixxx-Wiki DDJ-1000](https://github.com/mixxxdj/mixxx/wiki/ddj-1000)
